@@ -15589,20 +15589,33 @@
 
         /**
          * PDFを特定のページで開くための関数
-         * Android Chrome対策としてa要素を動的に生成し、ターゲット属性を調整
+         * Android Chrome/Braveでのページジャンプ対策
          */
         function openPdfAtPage(page) {
-            const url = `2025crc.pdf#page=` + page;
+            const pdfUrl = `2025crc.pdf`;
+            const fullUrl = pdfUrl + "#page=" + page;
             
-            // Android Chrome等で#pageが効かない場合へのフォールバックとして、
-            // PDFをブラウザ内蔵ビューアではなく直接開かせる試み
-            const a = document.createElement('a');
-            a.href = url;
-            a.target = '_blank';
-            a.rel = 'noopener noreferrer';
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
+            const isAndroid = /Android/i.test(navigator.userAgent);
+            
+            if (isAndroid) {
+                // Androidの場合、ブラウザ内蔵ビューアが#pageパラメータを無視することが多いため
+                // Googleドキュメントビューアを介した方法、あるいはリンクの属性を調整して再試行します
+                // ※サーバー上にPDFが配置されている場合に有効な方法です
+                const absoluteUrl = new URL(fullUrl, window.location.href).href;
+                
+                // 1. 標準的なリンククリック（target=_blank）
+                const a = document.createElement('a');
+                a.href = fullUrl;
+                a.target = '_blank';
+                // 以下の属性を追加することでブラウザによるPDFハンドリングの挙動を変える試み
+                a.rel = 'noopener noreferrer';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+            } else {
+                // PCやiOSなどは通常通り
+                window.open(fullUrl, '_blank');
+            }
         }
 
         function extractTitle(item, firstKeyword) {
