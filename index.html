@@ -15587,38 +15587,8 @@
         const hitCount = document.getElementById('hitCount');
         const modeRadios = document.getElementsByName('searchMode');
 
-        /**
-         * PDFを特定のページで開くための関数
-         * Android Chrome/Braveでのページジャンプ対策
-         */
-        function openPdfAtPage(page) {
-            const pdfUrl = `2025crc.pdf`;
-            const fullUrl = pdfUrl + "#page=" + page;
-            
-            const isAndroid = /Android/i.test(navigator.userAgent);
-            
-            if (isAndroid) {
-                // Androidの場合、ブラウザ内蔵ビューアが#pageパラメータを無視することが多いため
-                // Googleドキュメントビューアを介した方法、あるいはリンクの属性を調整して再試行します
-                // ※サーバー上にPDFが配置されている場合に有効な方法です
-                const absoluteUrl = new URL(fullUrl, window.location.href).href;
-                
-                // 1. 標準的なリンククリック（target=_blank）
-                const a = document.createElement('a');
-                a.href = fullUrl;
-                a.target = '_blank';
-                // 以下の属性を追加することでブラウザによるPDFハンドリングの挙動を変える試み
-                a.rel = 'noopener noreferrer';
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-            } else {
-                // PCやiOSなどは通常通り
-                window.open(fullUrl, '_blank');
-            }
-        }
-
         function extractTitle(item, firstKeyword) {
+            // 検査項目の場合は既に名前があるのでそれを使う
             if (item.type === 'item' && item.name) return item.name;
 
             const text = `${item.name || ''} ${item.content || ''} ${item.code || ''}`.trim();
@@ -15628,6 +15598,7 @@
 
             if (index === -1) return "P." + item.page;
 
+            // ヒットした場所から、スペースや特定の記号までを切り出す
             let endPos = text.length;
             const delimiters = [' ', '　', '\t', ')', '）', '→', '|', ' '];
             
@@ -15639,6 +15610,7 @@
             }
 
             let foundStr = text.substring(index, endPos).trim();
+            // ページ番号を付与
             return `P.${item.page} ${foundStr}`;
         }
 
@@ -15686,6 +15658,7 @@
                 return;
             }
 
+            // 優先順位: 項目索引(index) > 検査項目(item) > 解説(page) > 参考文献(reference)
             const typeOrder = { 'index': 0, 'item': 1, 'page': 2, 'reference': 3 };
             const sortedResults = results.sort((a, b) => {
                 if (a.type !== b.type) return typeOrder[a.type] - typeOrder[b.type];
@@ -15715,7 +15688,8 @@
                     <div class="flex flex-col items-center gap-1 shrink-0 border-l border-slate-100 pl-4 min-w-[60px]">
                         <span class="text-[8px] font-black text-slate-300 uppercase">Page</span>
                         <span class="text-xl font-black text-slate-700 leading-none">${item.page}</span>
-                        <button onclick="openPdfAtPage(${item.page})" class="mt-2 w-full py-2 bg-slate-900 text-white rounded-xl text-[10px] font-black active:scale-95 transition-transform">
+                        <button onclick="window.open('viewer.html?file=2025crc.pdf&page=' + ${item.page}, '_blank')" 
+                            class="mt-2 w-full py-2 bg-slate-900 text-white rounded-xl text-[10px] font-black active:scale-95 transition-transform">
                             表示
                         </button>
                     </div>
