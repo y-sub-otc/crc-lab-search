@@ -1,60 +1,70 @@
 <!DOCTYPE html>
-<html lang="ja">
+<html dir="ltr" mozdisallowselectionprint lang="ja">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
   <title>PDF Viewer</title>
 
-  <!-- PDF.js v5 viewer styles -->
-  <link rel="stylesheet" href="pdfjs/viewer.css">
-</head>
-<body>
+  <link rel="resource" type="application/l10n" href="pdfjs/locale/locale.properties" />
+  <link rel="stylesheet" href="pdfjs/viewer.css" />
+  <script src="pdfjs/compatibility.js"></script>
+  <script src="pdfjs/pdf.js"></script>
 
-  <!-- PDF.js viewer container -->
-  <div id="viewerContainer" class="pdfViewer"></div>
-
-  <!-- PDF.js v5 viewer module -->
-  <script type="module">
-    import * as pdfjsViewer from './pdfjs/viewer.mjs';
-    import * as pdfjsLib from './pdfjs/pdf.mjs';
-
-    // PDF.js worker のパス設定
-    pdfjsLib.GlobalWorkerOptions.workerSrc = './pdfjs/pdf.worker.mjs';
-
-    // URL パラメータから PDF ファイル名とページ番号を取得
-    const urlParams = new URLSearchParams(window.location.search);
-    const file = urlParams.get("file");
-    const pageNumber = parseInt(urlParams.get("page") || "1");
-
-    if (!file) {
-      document.body.innerHTML = "<p>file パラメータが必要です。</p>";
-      throw new Error("file パラメータが必要です");
-    }
-
-    const pdfUrl = file;
-
-    // PDFの読み込み
-    const eventBus = new pdfjsViewer.EventBus();
-    const linkService = new pdfjsViewer.PDFLinkService({ eventBus });
-
-    const viewer = new pdfjsViewer.PDFViewer({
-      container: document.getElementById("viewerContainer"),
-      eventBus,
-      linkService
-    });
-
-    linkService.setViewer(viewer);
-
-    const loadingTask = pdfjsLib.getDocument(pdfUrl);
-
-    loadingTask.promise.then(pdfDocument => {
-      viewer.setDocument(pdfDocument);
-      linkService.setDocument(pdfDocument);
-
-      // 指定ページへ移動
-      viewer.currentPageNumber = pageNumber;
-    });
+  <script>
+    // Worker のパスを設定
+    pdfjsLib.GlobalWorkerOptions.workerSrc = "pdfjs/pdf.worker.js";
   </script>
 
+  <script src="pdfjs/viewer.js"></script>
+</head>
+
+<body tabindex="1">
+  <div id="outerContainer">
+    <div id="sidebarContainer">
+      <div id="toolbarSidebar">
+        <div class="splitToolbarButton toggled">
+          <button id="viewThumbnail" class="toolbarButton toggled" title="サムネイル" tabindex="2" data-l10n-id="pdfjs-thumbnails">
+          </button>
+        </div>
+      </div>
+
+      <div id="sidebarContent">
+        <div id="thumbnailView"></div>
+        <div id="outlineView" class="hidden"></div>
+        <div id="attachmentsView" class="hidden"></div>
+      </div>
+    </div>
+
+    <div id="mainContainer">
+      <div id="toolbar">
+        <div id="toolbarContainer">
+          <button id="firstPage" class="toolbarButton pageUp" title="最初のページ" tabindex="6" data-l10n-id="pdfjs-firstPage"></button>
+          <button id="lastPage" class="toolbarButton pageDown" title="最後のページ" tabindex="6" data-l10n-id="pdfjs-lastPage"></button>
+        </div>
+      </div>
+
+      <div id="viewerContainer" tabindex="0">
+        <div id="viewer" class="pdfViewer"></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // URL パラメータ
+    const params = new URLSearchParams(window.location.search);
+    const file = params.get("file");
+    const page = parseInt(params.get("page") || "1");
+
+    if (!file) {
+      alert("file パラメータが必要です。");
+    }
+
+    // PDF 準備
+    const DEFAULT_URL = file;
+
+    document.addEventListener("webviewerloaded", function () {
+      PDFViewerApplication.open(DEFAULT_URL);
+      PDFViewerApplication.initialBookmark = "page=" + page;
+    });
+  </script>
 </body>
 </html>
