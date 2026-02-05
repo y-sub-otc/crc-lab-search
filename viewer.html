@@ -1,115 +1,60 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>PDF Viewer</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PDF Viewer</title>
 
-<!-- PDF.js viewer styles -->
-<link rel="stylesheet" href="pdfjs/viewer.css" />
-
-<style>
-  html, body {
-    width: 100%;
-    height: 100%;
-    margin: 0;
-    overflow: hidden;
-  }
-</style>
+  <!-- PDF.js v5 viewer styles -->
+  <link rel="stylesheet" href="pdfjs/viewer.css">
 </head>
+<body>
 
-<body tabindex="1">
+  <!-- PDF.js viewer container -->
+  <div id="viewerContainer" class="pdfViewer"></div>
 
-<div id="outerContainer">
-  <div id="sidebarContainer">
-    <div id="toolbarSidebar">
-      <div class="splitToolbarButton toggled">
-        <button id="viewThumbnail" class="toolbarButton" title="ページ一覧">
-          <span>サムネイル</span>
-        </button>
-      </div>
-    </div>
-    <div id="thumbnailView"></div>
-  </div>
+  <!-- PDF.js v5 viewer module -->
+  <script type="module">
+    import * as pdfjsViewer from './pdfjs/viewer.mjs';
+    import * as pdfjsLib from './pdfjs/pdf.mjs';
 
-  <div id="mainContainer">
-    <div class="toolbar">
-      <div id="toolbarContainer">
+    // PDF.js worker のパス設定
+    pdfjsLib.GlobalWorkerOptions.workerSrc = './pdfjs/pdf.worker.mjs';
 
-        <div id="toolbarViewer">
-          <div id="toolbarViewerLeft">
-            <button id="sidebarToggle" class="toolbarButton" title="目次">
-              <span>目次</span>
-            </button>
+    // URL パラメータから PDF ファイル名とページ番号を取得
+    const urlParams = new URLSearchParams(window.location.search);
+    const file = urlParams.get("file");
+    const pageNumber = parseInt(urlParams.get("page") || "1");
 
-            <button id="previous" class="toolbarButton" title="前のページ">
-              <span>前</span>
-            </button>
-            <button id="next" class="toolbarButton" title="次のページ">
-              <span>次</span>
-            </button>
-
-            <input id="pageNumber" class="toolbarField" type="number" value="1" min="1" />
-            <span id="numPages" class="toolbarLabel"></span>
-          </div>
-
-          <div id="toolbarViewerRight">
-            <button id="zoomOut" class="toolbarButton" title="縮小">
-              <span>-</span>
-            </button>
-            <button id="zoomIn" class="toolbarButton" title="拡大">
-              <span>+</span>
-            </button>
-            <button id="print" class="toolbarButton" title="印刷">
-              <span>印刷</span>
-            </button>
-            <button id="download" class="toolbarButton" title="ダウンロード">
-              <span>DL</span>
-            </button>
-          </div>
-        </div>
-
-      </div>
-    </div>
-
-    <div id="viewerContainer" tabindex="0">
-      <div id="viewer" class="pdfViewer"></div>
-    </div>
-  </div>
-
-</div>
-
-<!-- PDF.js viewer logic -->
-<script type="module">
-  import "./pdfjs/viewer.mjs";
-
-  // URL パラメータ取得
-  function getParams() {
-    const params = {};
-    window.location.search.substring(1).split("&").forEach(part => {
-      const [key, value] = part.split("=");
-      params[decodeURIComponent(key)] = decodeURIComponent(value || "");
-    });
-    return params;
-  }
-
-  const params = getParams();
-  const pdfFile = params.file || "2025crc.pdf";
-  const page = parseInt(params.page || "1", 10);
-
-  // PDF.js v5.4 の標準初期化
-  PDFViewerApplicationOptions.set("defaultUrl", pdfFile);
-  PDFViewerApplicationOptions.set("workerSrc", "./pdfjs/pdf.worker.mjs");
-
-  // 起動
-  PDFViewerApplication.run().then(() => {
-    // ページジャンプ（PDF 読み込み後に実行）
-    if (!isNaN(page) && page > 0) {
-      PDFViewerApplication.initialBookmark = `page=${page}`;
+    if (!file) {
+      document.body.innerHTML = "<p>file パラメータが必要です。</p>";
+      throw new Error("file パラメータが必要です");
     }
-  });
 
-</script>
+    const pdfUrl = file;
+
+    // PDFの読み込み
+    const eventBus = new pdfjsViewer.EventBus();
+    const linkService = new pdfjsViewer.PDFLinkService({ eventBus });
+
+    const viewer = new pdfjsViewer.PDFViewer({
+      container: document.getElementById("viewerContainer"),
+      eventBus,
+      linkService
+    });
+
+    linkService.setViewer(viewer);
+
+    const loadingTask = pdfjsLib.getDocument(pdfUrl);
+
+    loadingTask.promise.then(pdfDocument => {
+      viewer.setDocument(pdfDocument);
+      linkService.setDocument(pdfDocument);
+
+      // 指定ページへ移動
+      viewer.currentPageNumber = pageNumber;
+    });
+  </script>
 
 </body>
 </html>
