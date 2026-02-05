@@ -1,47 +1,35 @@
 <!DOCTYPE html>
-<html dir="ltr" mozdisallowselectionprint lang="ja">
+<html lang="ja">
 <head>
   <meta charset="UTF-8" />
   <title>PDF Viewer</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  <link rel="resource" type="application/l10n" href="pdfjs/locale/locale.properties" />
-  <link rel="stylesheet" href="pdfjs/viewer.css" />
-  <script src="pdfjs/compatibility.js"></script>
+  <!-- PDF.js v3 viewer CSS -->
+  <link rel="stylesheet" href="pdfjs/viewer.css">
+
+  <!-- PDF.js core library -->
   <script src="pdfjs/pdf.js"></script>
 
+  <!-- PDF.js worker -->
   <script>
-    // Worker のパスを設定
     pdfjsLib.GlobalWorkerOptions.workerSrc = "pdfjs/pdf.worker.js";
   </script>
 
+  <!-- PDF.js viewer -->
   <script src="pdfjs/viewer.js"></script>
+
 </head>
 
 <body tabindex="1">
   <div id="outerContainer">
-    <div id="sidebarContainer">
-      <div id="toolbarSidebar">
-        <div class="splitToolbarButton toggled">
-          <button id="viewThumbnail" class="toolbarButton toggled" title="サムネイル" tabindex="2" data-l10n-id="pdfjs-thumbnails">
-          </button>
-        </div>
-      </div>
 
-      <div id="sidebarContent">
-        <div id="thumbnailView"></div>
-        <div id="outlineView" class="hidden"></div>
-        <div id="attachmentsView" class="hidden"></div>
-      </div>
+    <!-- Sidebar と UI は viewer.js が自動生成するので、ここは空でOK -->
+    <div id="sidebarContainer">
+      <div id="thumbnailView"></div>
     </div>
 
     <div id="mainContainer">
-      <div id="toolbar">
-        <div id="toolbarContainer">
-          <button id="firstPage" class="toolbarButton pageUp" title="最初のページ" tabindex="6" data-l10n-id="pdfjs-firstPage"></button>
-          <button id="lastPage" class="toolbarButton pageDown" title="最後のページ" tabindex="6" data-l10n-id="pdfjs-lastPage"></button>
-        </div>
-      </div>
-
       <div id="viewerContainer" tabindex="0">
         <div id="viewer" class="pdfViewer"></div>
       </div>
@@ -49,20 +37,17 @@
   </div>
 
   <script>
-    // URL パラメータ
     const params = new URLSearchParams(window.location.search);
     const file = params.get("file");
     const page = parseInt(params.get("page") || "1");
 
     if (!file) {
-      alert("file パラメータが必要です。");
+      alert("file パラメータが必要です");
     }
 
-    // PDF 準備
-    const DEFAULT_URL = file;
-
-    document.addEventListener("webviewerloaded", function () {
-      PDFViewerApplication.open(DEFAULT_URL);
+    // PDF をロード
+    document.addEventListener("webviewerloaded", () => {
+      PDFViewerApplication.open(file);
       PDFViewerApplication.initialBookmark = "page=" + page;
     });
   </script>
