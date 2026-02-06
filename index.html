@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>総合検査案内 検索システム</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;900&display=swap');
+        body { font-family: 'Noto Sans JP', sans-serif; }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-900 pb-20">
+    <div id="app" class="max-w-3xl mx-auto px-4 py-8">
+        <header class="text-center mb-8">
+            <h1 class="text-2xl font-black text-slate-800 mb-2">総合検査案内 検索</h1>
+            <p class="text-slate-400 text-[10px] font-bold tracking-widest uppercase">2025 Edition Index</p>
+        </header>
+
+        <div class="sticky top-4 z-50 mb-8 space-y-4">
+            <div class="relative group">
+                <input type="text" id="searchInput" placeholder="検査名、コード、キーワードを入力..." 
+                    class="w-full pl-12 pr-4 py-5 bg-white border-2 border-slate-200 rounded-3xl outline-none focus:border-blue-500 transition-all text-lg font-medium shadow-xl shadow-slate-200/50">
+                <div class="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none text-slate-300 group-focus-within:text-blue-500">
+                    <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
+                </div>
+            </div>
+
+            <div class="flex justify-center">
+                <div class="inline-flex bg-white p-1 rounded-xl border border-slate-200 shadow-sm">
+                    <label class="cursor-pointer">
+                        <input type="radio" name="searchMode" value="AND" checked class="hidden peer">
+                        <div class="px-6 py-2 rounded-lg text-sm font-bold text-slate-400 peer-checked:bg-slate-800 peer-checked:text-white transition-all">AND 検索</div>
+                    </label>
+                    <label class="cursor-pointer">
+                        <input type="radio" name="searchMode" value="OR" class="hidden peer">
+                        <div class="px-6 py-2 rounded-lg text-sm font-bold text-slate-400 peer-checked:bg-slate-800 peer-checked:text-white transition-all">OR 検索</div>
+                    </label>
+                </div>
+            </div>
+        </div>
+
+        <div id="resultsWrapper">
+            <div id="emptyState" class="text-center py-20 text-slate-300">
+                <p class="text-sm font-bold">キーワードを入力してください</p>
+            </div>
+            <div id="hitCount" class="hidden text-[10px] font-black text-slate-400 uppercase mb-4 px-2"></div>
+            <div id="resultsList" class="space-y-3"></div>
+        </div>
+    </div>
+
+<script>
+    let initialData = [];  // ← fetch 後に代入される
+
+    // JSON 読み込み
+    fetch("lab_data.json")
+        .then(res => res.json())
+        .then(data => {
+            initialData = data;
+            console.log("JSON 読み込み完了", initialData.length);
+
+            // JSON 読み込み後に検索イベントを有効化
+            searchInput.addEventListener('input', performSearch);
+            modeRadios.forEach(r => r.addEventListener('change', performSearch));
+        })
+        .catch(err => {
+            console.error("JSON 読み込みエラー:", err);
+            emptyState.innerHTML = "<p class='text-sm text-red-500'>データを読み込めませんでした</p>";
+        });
+
+    const searchInput = document.getElementById('searchInput');
+    const resultsList = document.getElementById('resultsList');
+    const emptyState = document.getElementById('emptyState');
+    const hitCount = document.getElementById('hitCount');
+    const modeRadios = document.getElementsByName('searchMode');
+
+    function openPdfAtPage(page) {
+        const pdfUrl = `2025crc.pdf`;
+        const fullUrl = pdfUrl + "#page=" + page;
+        
+        const isAndroid = /Android/i.test(navigator.userAgent);
+        
+        if (isAndroid) {
+            const a = document.createElement('a');
+            a.href = fullUrl;
+            a.target = '_blank';
+            a.rel = 'noopener noreferrer';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+        } else {
+            window.open(fullUrl, '_blank');
+        }
+    }
+
+    function extractTitle(item, firstKeyword) {
+        if (item.type === 'item' && item.name) return item.name;
+
+        const text = `${item.name || ''} ${item.content || ''} ${item.code || ''}`.trim();
+        const lowerText = text.toLowerCase();
+        const lowerKw = firstKeyword.toLowerCase();
+        const index = lowerText.indexOf(lowerKw);
+
+        if (index === -1) return "P." + item.page;
+
+        let endPos = text.length;
+        const delimiters = [' ', '　', '\t', ')', '）', '→', '|', ' '];
+        
+        for (const d of delimiters) {
+            const dIdx = text.indexOf(d, index + firstKeyword.length);
+            if (dIdx !== -1 && dIdx < endPos) {
+                endPos = dIdx;
+            }
+        }
+
+        let foundStr = text.substring(index, endPos).trim();
+        return `P.${item.page} ${foundStr}`;
+    }
+
+    function performSearch() {
+        const query = searchInput.value.toLowerCase().trim();
+        const keywords = query.split(/\s+/).filter(k => k.length > 0);
+        const mode = Array.from(modeRadios).find(r => r.checked).value;
+
+        if (keywords.length === 0) {
+            resultsList.innerHTML = '';
+            emptyState.classList.remove('hidden');
+            hitCount.classList.add('hidden');
+            return;
+        }
+
+        const filtered = initialData.filter(item => {
+            const targetText = `${item.name} ${item.content} ${item.code} ${item.page}`.toLowerCase();
+            if (mode === 'AND') {
+                return keywords.every(kw => targetText.includes(kw));
+            } else {
+                return keywords.some(kw => targetText.includes(kw));
+            }
+        });
+
+        renderResults(filtered, keywords);
+    }
+
+    function getBadgeInfo(type) {
+        switch(type) {
+            case 'index': return { label: '項目索引', class: 'bg-emerald-500 text-white' };
+            case 'item': return { label: '検査項目', class: 'bg-blue-600 text-white' };
+            case 'reference': return { label: '参考文献', class: 'bg-purple-500 text-white' };
+            default: return { label: '解説', class: 'bg-slate-100 text-slate-400' };
+        }
+    }
+
+    function renderResults(results, keywords) {
+        emptyState.classList.add('hidden');
+        hitCount.classList.remove('hidden');
+        hitCount.textContent = `HIT: ${results.length} 件`;
+        resultsList.innerHTML = '';
+
+        if (results.length === 0) {
+            resultsList.innerHTML = '<div class="text-center py-10 text-slate-400 text-sm">該当なし</div>';
+            return;
+        }
+
+        const typeOrder = { 'index': 0, 'item': 1, 'page': 2, 'reference': 3 };
+        const sortedResults = results.sort((a, b) => {
+            if (a.type !== b.type) return typeOrder[a.type] - typeOrder[b.type];
+            return a.page - b.page;
+        });
+
+        const firstKw = keywords[0];
+
+        sortedResults.slice(0, 500).forEach(item => {
+            const badge = getBadgeInfo(item.type);
+            const displayTitle = extractTitle(item, firstKw);
+            
+            const div = document.createElement('div');
+            div.className = "bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-4 hover:border-blue-300 transition-colors";
+            
+            div.innerHTML = `
+                <div class="flex-1 min-w-0">
+                    <div class="flex items-center gap-2 mb-1">
+                        <span class="px-1.5 py-0.5 rounded text-[9px] font-black tracking-tighter uppercase ${badge.class}">
+                            ${badge.label}
+                        </span>
+                        <span class="text-xs font-mono font-bold text-blue-500">${item.code || ''}</span>
+                    </div>
+                    <h3 class="font-bold text-slate-800 text-base leading-tight truncate">${displayTitle}</h3>
+                    <p class="text-[10px] text-slate-400 mt-1 line-clamp-1">${item.content || ''}</p>
+                </div>
+                <div class="flex flex-col items-center gap-1 shrink-0 border-l border-slate-100 pl-4 min-w-[60px]">
+                    <span class="text-[8px] font-black text-slate-300 uppercase">Page</span>
+                    <span class="text-xl font-black text-slate-700 leading-none">${item.page}</span>
+                    <button onclick="openPdfAtPage(${item.page})" class="mt-2 w-full py-2 bg-slate-900 text-white rounded-xl text-[10px] font-black active:scale-95 transition-transform">
+                        表示
+                    </button>
+                </div>
+            `;
+            resultsList.appendChild(div);
+        });
+    }
+</script>
+
+
+
+</body>
+</html>
