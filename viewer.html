@@ -435,3 +435,9 @@ See https://github.com/adobe-type-tools/cmap-resources
     <input type="file" id="fileInput" class="hidden">
   </body>
 </html>
+<link rel="stylesheet" href="pdfjs/viewer.css">
+<script src="pdfjs/pdf.js"></script>
+<script>
+  pdfjsLib.GlobalWorkerOptions.workerSrc = "pdfjs/pdf.worker.js";
+</script>
+<script src="pdfjs/viewer.js"></script>
