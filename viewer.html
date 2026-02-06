@@ -53,3 +53,9 @@
   </script>
 </body>
 </html>
+<script>
+  // viewer.js の worker 自動設定を強制的に上書きする
+  pdfjsLib.GlobalWorkerOptions.workerSrc = "pdfjs/pdf.worker.js";
+  window.PDFJS = window.PDFJS || {};
+  PDFJS.workerSrc = "pdfjs/pdf.worker.js";
+</script>
