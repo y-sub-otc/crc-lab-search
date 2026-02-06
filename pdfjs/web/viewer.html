@@ -1217,3 +1217,13 @@ See https://github.com/adobe-type-tools/cmap-resources
     <div id="printContainer"></div>
   </body>
 </html>
+<script type="module">
+import { PDFViewerApplication } from "./viewer.mjs";
+
+const params = new URLSearchParams(window.location.search);
+const file = params.get("file");
+
+if (file) {
+  PDFViewerApplication.open(file);
+}
+</script>
