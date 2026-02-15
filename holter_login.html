@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>ホルター予約ログイン</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body class="bg-slate-50 flex items-center justify-center h-screen">
+
+  <div class="bg-white p-8 rounded-2xl shadow-xl w-80">
+    <h1 class="text-xl font-bold text-center mb-6">ホルター予約ログイン</h1>
+
+    <input id="userId" type="text" placeholder="ユーザーID"
+      class="w-full mb-4 px-4 py-2 border rounded-lg">
+
+    <input id="password" type="password" placeholder="パスワード"
+      class="w-full mb-6 px-4 py-2 border rounded-lg">
+
+    <button onclick="login()"
+      class="w-full bg-green-700 text-white py-2 rounded-lg font-bold">
+      ログイン
+    </button>
+  </div>
+
+<script>
+function login() {
+  const id = document.getElementById("userId").value.trim();
+  const pw = document.getElementById("password").value.trim();
+
+  if (!id || !pw) {
+    alert("ID とパスワードを入力してください");
+    return;
+  }
+
+  // ★ 本来はサーバで認証するが、まずは簡易版
+  localStorage.setItem("holterUser", id);
+
+  window.location.href = "holter_reservation.html";
+}
+</script>
+
+</body>
+</html>
