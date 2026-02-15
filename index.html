@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>総合検査案内 検索システム</title>
+    <title>総合検査案内検索</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;900&display=swap');
@@ -13,19 +13,31 @@
 <body class="bg-slate-50 text-slate-900 pb-20">
     <div id="app" class="max-w-3xl mx-auto px-4 py-8">
         <header class="text-center mb-8">
-            <h1 class="text-2xl font-black text-slate-800 mb-2">総合検査案内 検索</h1>
+            <h1 class="text-2xl font-black text-slate-800 mb-2">総合検査案内検索</h1>
             <p class="text-slate-400 text-[10px] font-bold tracking-widest uppercase">2025 Edition Index</p>
         </header>
 
-        <div class="sticky top-4 z-50 mb-8 space-y-4">
             <div class="relative group">
                 <input type="text" id="searchInput" placeholder="検査名、コード、キーワードを入力..." 
-                    class="w-full pl-12 pr-4 py-5 bg-white border-2 border-slate-200 rounded-3xl outline-none focus:border-blue-500 transition-all text-lg font-medium shadow-xl shadow-slate-200/50">
+                    class="w-full pl-12 pr-12 py-5 bg-white border-2 border-slate-200 rounded-3xl outline-none focus:border-blue-500 transition-all text-lg font-medium shadow-xl shadow-slate-200/50">
+
+                <!-- 左側の検索アイコン -->
                 <div class="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none text-slate-300 group-focus-within:text-blue-500">
                     <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                     </svg>
                 </div>
+
+                <!-- ★ 右端のクリア（×）ボタン -->
+                <button id="clearSearch"
+                    class="absolute inset-y-0 right-0 pr-5 flex items-center text-slate-300 hover:text-slate-500 transition"
+                    onclick="searchInput.value=''; performSearch();">
+                    <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
             </div>
 
             <div class="flex justify-center">
@@ -131,10 +143,10 @@
 
     function getBadgeInfo(type) {
         switch(type) {
-            case 'index': return { label: '項目索引', class: 'bg-emerald-500 text-white' };
             case 'item': return { label: '検査項目', class: 'bg-blue-600 text-white' };
-            case 'reference': return { label: '参考文献', class: 'bg-purple-500 text-white' };
             default: return { label: '解説', class: 'bg-slate-100 text-slate-400' };
+            case 'reference': return { label: '参考文献', class: 'bg-purple-500 text-white' };
+            case 'index': return { label: '項目索引', class: 'bg-emerald-500 text-white' };
         }
     }
 
