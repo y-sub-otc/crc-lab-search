@@ -13,7 +13,7 @@
 <body class="bg-slate-50 text-slate-900 pb-20">
     <div id="app" class="max-w-3xl mx-auto px-4 py-8">
         <header class="text-center mb-8">
-            <h1 class="text-2xl font-black text-slate-800 mb-2">総合検査案内検索</h1>
+            <h1 class="text-2xl font-black text-slate-800 mb-2">総合検査案内</h1>
             <p class="text-slate-400 text-[10px] font-bold tracking-widest uppercase">2025 Edition Index</p>
         </header>
 
@@ -88,7 +88,7 @@
     const modeRadios = document.getElementsByName('searchMode');
 
     function openPdfAtPage(page) {
-        const url = `https://y-sub-otc.github.io/crc-lab-search/pdfjs/web/viewer.html?file=https://y-sub-otc.github.io/crc-lab-search/2025crc.pdf#page=${page}`;
+        const url = `https://y-sub-otc.github.io/crc-lab-search/pdfjs/web/viewer.html?file=https://y-sub-otc.github.io/crc-lab-search/crc.pdf#page=${page}`;
         window.open(url, "_blank");
     }
 
