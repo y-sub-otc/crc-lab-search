@@ -8,33 +8,39 @@
 
 <body class="bg-slate-50 p-4">
 
-  <h1 class="text-xl font-bold mb-4">ホルター予約システム</h1>
+  <div class="max-w-3xl mx-auto">
 
-  <div id="userArea" class="mb-4 text-sm text-slate-600"></div>
+    <h1 class="text-xl font-bold mb-4">ホルター予約システム</h1>
 
-  <div class="bg-white p-4 rounded-xl shadow mb-6">
-    <h2 class="font-bold mb-2">予約一覧</h2>
-    <div id="reservationList" class="space-y-2 text-sm"></div>
-  </div>
+    <div id="userArea" class="mb-4 text-sm text-slate-600"></div>
 
-  <div class="bg-white p-4 rounded-xl shadow">
-    <h2 class="font-bold mb-2">新規予約</h2>
+    <div class="bg-white p-4 rounded-xl shadow mb-6">
+      <h2 class="font-bold mb-2">予約一覧</h2>
+      <div id="reservationList" class="space-y-2 text-sm"></div>
+    </div>
 
-    <select id="branch" class="w-full border p-2 rounded mb-2"></select>
-    <select id="device" class="w-full border p-2 rounded mb-2"></select>
+    <div class="bg-white p-4 rounded-xl shadow">
+      <h2 class="font-bold mb-2">新規予約</h2>
 
-    <input id="date" type="date" class="w-full border p-2 rounded mb-2">
-    <input id="time" type="time" class="w-full border p-2 rounded mb-2">
+      <select id="branch" class="w-full border p-2 rounded mb-2"></select>
+      <select id="device" class="w-full border p-2 rounded mb-2"></select>
 
-    <textarea id="note" placeholder="備考" class="w-full border p-2 rounded mb-2"></textarea>
+      <input id="date" type="date" class="w-full border p-2 rounded mb-2">
+      <input id="time" type="time" class="w-full border p-2 rounded mb-2">
 
-    <button onclick="addReservation()"
-      class="w-full bg-green-700 text-white py-2 rounded-lg font-bold">
-      予約する
-    </button>
+      <textarea id="note" placeholder="備考" class="w-full border p-2 rounded mb-2"></textarea>
+
+      <button onclick="addReservation()"
+        class="w-full bg-green-700 text-white py-2 rounded-lg font-bold">
+        予約する
+      </button>
+    </div>
+
   </div>
 
 <script>
+
+
 const baseUrl = "http://192.168.1.50:3001";
 
 async function fetchJson(url) {
