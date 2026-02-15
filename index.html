@@ -160,7 +160,12 @@
             return;
         }
 
-        const typeOrder = { 'index': 0, 'item': 1, 'page': 2, 'reference': 3 };
+        const typeOrder = { 
+            'item': 0,        // 検査項目
+            'default': 1,     // 解説（type が index/item/reference 以外）
+            'reference': 2,   // 参考文献
+            'index': 3        // 項目索引
+        };
         const sortedResults = results.sort((a, b) => {
             if (a.type !== b.type) return typeOrder[a.type] - typeOrder[b.type];
             return a.page - b.page;
