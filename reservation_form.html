@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>予約登録</title>
+    <style>
+        body { margin: 0; font-family: sans-serif; background-color: #f5f5f5; }
+        header { background-color: #006400; color: white; padding: 15px; position: sticky; top: 0; z-index: 100; }
+        .header-content { max-width: 600px; margin: 0 auto; display: flex; align-items: center; }
+        .back-btn { background: none; border: none; color: white; font-size: 20px; cursor: pointer; margin-right: 15px; }
+        
+        .container { max-width: 600px; margin: 0 auto; padding: 20px; box-sizing: border-box; }
+        .card { background: white; padding: 25px; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        
+        .form-group { margin-bottom: 20px; }
+        label { display: block; margin-bottom: 8px; font-weight: bold; color: #333; font-size: 14px; }
+        input, textarea { 
+            width: 100%; padding: 12px; box-sizing: border-box; 
+            border: 1px solid #ccc; border-radius: 8px; font-size: 16px; 
+            font-family: inherit;
+        }
+        textarea { height: 100px; resize: none; }
+        
+        .info-row { display: flex; justify-content: space-between; margin-bottom: 10px; font-size: 15px; }
+        .info-label { color: #666; }
+        .info-value { font-weight: bold; color: #006400; }
+
+        .submit-btn { 
+            width: 100%; padding: 16px; background-color: #006400; color: white; 
+            border: none; border-radius: 8px; font-size: 16px; font-weight: bold; 
+            cursor: pointer; transition: background 0.3s; margin-top: 10px;
+        }
+        .submit-btn:hover { background-color: #004d00; }
+        .submit-btn:active { transform: scale(0.98); }
+    </style>
+</head>
+<body>
+
+<header>
+    <div class="header-content">
+        <button class="back-btn" onclick="history.back()">◀</button>
+        <div style="font-weight: bold;">予約登録</div>
+    </div>
+</header>
+
+<div class="container">
+    <div class="card">
+        <div class="info-row">
+            <span class="info-label">対象機器</span>
+            <span class="info-value" id="deviceNameDisplay">---</span>
+        </div>
+        <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;">
+
+        <div class="form-group">
+            <label>利用開始日</label>
+            <input type="date" id="dateFrom">
+        </div>
+
+        <div class="form-group">
+            <label>返却予定日</label>
+            <input type="date" id="dateTo">
+        </div>
+
+        <div class="form-group">
+            <label>利用者名</label>
+            <input type="text" id="userName" placeholder="お名前を入力してください">
+        </div>
+
+        <div class="form-group">
+            <label>備考</label>
+            <textarea id="note" placeholder="使用目的や施設名など（任意）"></textarea>
+        </div>
+
+        <button class="submit-btn" onclick="submitReservation()">予約を確定する</button>
+    </div>
+</div>
+
+<script>
+    const API_BASE = "http://192.168.1.50:3001";
+    const params = new URLSearchParams(window.location.search);
+    const deviceId = params.get('id');
+    const branchId = params.get('branchId');
+    const deviceName = params.get('name');
+
+    window.onload = () => {
+        if (!deviceId || !branchId) {
+            alert("機器情報が不足しています");
+            history.back();
+            return;
+        }
+        document.getElementById('deviceNameDisplay').textContent = decodeURIComponent(deviceName);
+        
+        // 初期日付を今日に設定
+        const today = new Date().toISOString().split('T')[0];
+        document.getElementById('dateFrom').value = today;
+        document.getElementById('dateTo').value = today;
+    };
+
+    async function submitReservation() {
+        const dateFrom = document.getElementById('dateFrom').value;
+        const dateTo = document.getElementById('dateTo').value;
+        const userName = document.getElementById('userName').value;
+        const note = document.getElementById('note').value;
+
+        if (!userName) {
+            alert("利用者名を入力してください");
+            return;
+        }
+
+        if (dateFrom > dateTo) {
+            alert("返却予定日は開始日より後の日付にしてください");
+            return;
+        }
+
+        const requestBody = {
+            branchId: parseInt(branchId),
+            deviceId: parseInt(deviceId),
+            user: userName,
+            date: dateFrom,
+            returnDate: dateTo,
+            note: note
+        };
+
+        try {
+            const res = await fetch(`${API_BASE}/reservations/add`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(requestBody)
+            });
+            
+            if (res.ok) {
+                alert("予約が完了しました");
+                location.href = 'reservation.html';
+            } else {
+                const data = await res.json();
+                alert("エラー: " + (data.message || "登録に失敗しました"));
+            }
+        } catch (e) {
+            alert("サーバーに接続できませんでした");
+        }
+    }
+</script>
+
+</body>
+</html>

@@ -7,33 +7,38 @@
     <style>
         body { margin: 0; font-family: sans-serif; background-color: #f5f5f5; padding-bottom: 70px; }
         header { background-color: #006400; color: white; padding: 15px; display: flex; align-items: center; position: sticky; top: 0; z-index: 100; }
+        .header-content { max-width: 600px; margin: 0 auto; width: 100%; display: flex; align-items: center; }
         .back-btn { background: none; border: none; color: white; font-size: 20px; cursor: pointer; margin-right: 15px; }
         
         .branch-selector { background: white; padding: 15px; border-bottom: 1px solid #ddd; }
+        .branch-selector-inner { max-width: 600px; margin: 0 auto; }
         select { width: 100%; padding: 10px; font-size: 16px; border-radius: 5px; border: 1px solid #ccc; }
 
-        .device-list { padding: 10px; }
+        .device-list { 
+            padding: 10px; 
+            max-width: 600px; /* 最大幅を制限 */
+            margin: 0 auto;   /* 中央寄せ */
+        }
         .device-card { background: white; margin-bottom: 10px; padding: 15px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); display: flex; justify-content: space-between; align-items: center; cursor: pointer; }
         .device-info h3 { margin: 0 0 5px 0; font-size: 16px; }
         .device-info p { margin: 0; font-size: 13px; color: #666; }
         
-        .status-badge { padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: bold; color: white; min-width: 60px; text-align: center; }
-        .status-waiting { background-color: #2196F3; }
-        .status-reserved { background-color: #4CAF50; }
-        .status-rental { background-color: #FF9800; }
-        .status-fault { background-color: #F44336; }
+        .status-badge { padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: bold; color: white; min-width: 80px; text-align: center; }
+        .status-waiting { background-color: #2196F3; } 
+        .status-reserved { background-color: #4CAF50; } 
+        .status-rental { background-color: #FF9800; } 
+        .status-fault { background-color: #F44336; } 
 
-        /* モーダル（Bottom Sheet風） */
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: none; z-index: 200; }
-        .modal-content { position: fixed; bottom: 0; width: 100%; background: white; border-radius: 16px 16px 0 0; padding: 20px; box-sizing: border-box; transform: translateY(100%); transition: transform 0.3s; z-index: 201; }
-        .modal-content.show { transform: translateY(0); }
+        .modal-content { position: fixed; bottom: 0; left: 50%; width: 100%; max-width: 600px; background: white; border-radius: 16px 16px 0 0; padding: 20px; box-sizing: border-box; transform: translate(-50%, 100%); transition: transform 0.3s; z-index: 201; }
+        .modal-content.show { transform: translate(-50%, 0); }
         .modal-header { font-weight: bold; margin-bottom: 20px; text-align: center; font-size: 18px; border-bottom: 1px solid #eee; padding-bottom: 10px; }
         .modal-btn { width: 100%; padding: 15px; margin-bottom: 10px; border-radius: 8px; border: 1px solid #ddd; background: white; font-size: 16px; cursor: pointer; text-align: left; display: flex; align-items: center; }
-        .modal-btn:active { background: #f0f0f0; }
         .modal-btn i { margin-right: 15px; font-style: normal; font-size: 20px; }
         .close-modal { width: 100%; padding: 12px; background: #eee; border: none; border-radius: 8px; margin-top: 10px; font-weight: bold; }
 
-        .bottom-nav { position: fixed; bottom: 0; width: 100%; background: white; display: flex; border-top: 1px solid #ddd; z-index: 150; }
+        .bottom-nav { position: fixed; bottom: 0; width: 100%; background: white; display: flex; border-top: 1px solid #ddd; z-index: 150; justify-content: center; }
+        .nav-inner { max-width: 600px; width: 100%; display: flex; }
         .nav-item { flex: 1; text-align: center; padding: 10px 0; font-size: 10px; color: #666; text-decoration: none; }
         .nav-item.active { color: #006400; font-weight: bold; }
         .nav-icon { font-size: 20px; display: block; margin-bottom: 2px; }
@@ -42,13 +47,17 @@
 <body>
 
 <header>
-    <button class="back-btn" onclick="location.href='holter_login.html'">◀</button>
-    <div style="font-weight: bold;">支所別機器一覧</div>
+    <div class="header-content">
+        <button class="back-btn" onclick="location.href='holter_login.html'">◀</button>
+        <div style="font-weight: bold;">支所別機器一覧</div>
+    </div>
 </header>
 
 <div class="branch-selector">
-    <select id="branchSelect" onchange="loadDevices()">
+    <div class="branch-selector-inner">
+        <select id="branchSelect" onchange="displayDevices()">
         </select>
+    </div>
 </div>
 
 <div class="device-list" id="deviceList"></div>
@@ -56,29 +65,41 @@
 <div class="modal-overlay" id="modalOverlay" onclick="closeModal()"></div>
 <div class="modal-content" id="modalContent">
     <div class="modal-header" id="modalTitle">機器名</div>
-    <div id="modalButtons">
-        </div>
+    <div id="modalButtons"></div>
     <button class="close-modal" onclick="closeModal()">キャンセル</button>
 </div>
 
 <nav class="bottom-nav">
-    <a href="reservation.html" class="nav-item active"><span class="nav-icon">📋</span>機器一覧</a>
-    <a href="reservation_list.html" class="nav-item"><span class="nav-icon">📅</span>予約一覧</a>
-    <a href="rental_list.html" class="nav-item"><span class="nav-icon">📤</span>貸出一覧</a>
-    <a href="return_history.html" class="nav-item"><span class="nav-icon">🕒</span>返却履歴</a>
-    <a href="gantt.html" class="nav-item"><span class="nav-icon">📊</span>チャート</a>
+    <div class="nav-inner">
+        <a href="reservation.html" class="nav-item active"><span class="nav-icon">📋</span>機器一覧</a>
+        <a href="reservation_list.html" class="nav-item"><span class="nav-icon">📅</span>予約一覧</a>
+        <a href="rental_list.html" class="nav-item"><span class="nav-icon">📤</span>貸出一覧</a>
+        <a href="return_history.html" class="nav-item"><span class="nav-icon">🕒</span>返却履歴</a>
+        <a href="gantt.html" class="nav-item"><span class="nav-icon">📊</span>チャート</a>
+    </div>
 </nav>
 
 <script>
-    const API_BASE = "http://localhost:3001"; // 自宅サーバのIPに書き換えてください
+    const API_BASE = "http://192.168.1.50:3001";
+    let allDevices = [];
+    let statusData = [];
     let selectedDevice = null;
 
     window.onload = async () => {
         const user = JSON.parse(sessionStorage.getItem('user'));
         if (!user) { location.href = 'holter_login.html'; return; }
+        
         try {
-            const res = await fetch(`${API_BASE}/branches`);
-            const branches = await res.json();
+            const [bRes, dRes, sRes] = await Promise.all([
+                fetch(`${API_BASE}/branches`),
+                fetch(`${API_BASE}/devices`),
+                fetch(`${API_BASE}/status`)
+            ]);
+            
+            const branches = await bRes.json();
+            allDevices = await dRes.json();
+            statusData = await sRes.json();
+
             const select = document.getElementById('branchSelect');
             branches.forEach(b => {
                 const opt = document.createElement('option');
@@ -86,54 +107,63 @@
                 opt.textContent = b.name;
                 select.appendChild(opt);
             });
-            loadDevices();
-        } catch (e) { alert("APIサーバーに接続できません"); }
+            
+            displayDevices();
+        } catch (e) { alert("API接続エラー"); }
     };
 
-    async function loadDevices() {
-        const branchId = document.getElementById('branchSelect').value;
+    function displayDevices() {
+        const branchId = parseInt(document.getElementById('branchSelect').value);
         const listDiv = document.getElementById('deviceList');
-        listDiv.innerHTML = "読込中...";
-        try {
-            const res = await fetch(`${API_BASE}/devices?branchId=${branchId}`);
-            const devices = await res.json();
-            listDiv.innerHTML = "";
-            devices.forEach(d => {
-                const statusMap = {
-                    'waiting': { label: '待機中', class: 'status-waiting' },
-                    'reserved': { label: '予約あり', class: 'status-reserved' },
-                    'rental': { label: '貸出中', class: 'status-rental' },
-                    'fault': { label: '停止中', class: 'status-fault' }
-                };
-                const status = statusMap[d.status] || { label: d.status, class: '' };
-                const card = document.createElement('div');
-                card.className = 'device-card';
-                card.onclick = () => openModal(d);
-                card.innerHTML = `
-                    <div class="device-info">
-                        <h3>${d.name}</h3>
-                        <p>${d.nextReservationDate ? '次回予約: ' + d.nextReservationDate : '直近の予定なし'}</p>
-                    </div>
-                    <span class="status-badge ${status.class}">${status.label}</span>
-                `;
-                listDiv.appendChild(card);
-            });
-        } catch (e) { listDiv.innerHTML = "データ取得エラー"; }
+        listDiv.innerHTML = "";
+
+        const branchDevices = allDevices.filter(d => d.branchId === branchId);
+
+        branchDevices.forEach(d => {
+            const s = statusData.find(st => st.deviceId === d.id && st.branchId === branchId);
+            if (!s) return;
+
+            const statusClassMap = {
+                '待機中': 'status-waiting',
+                '予約あり': 'status-reserved',
+                '貸し出し中': 'status-rental',
+                '停止中': 'status-fault'
+            };
+
+            const card = document.createElement('div');
+            card.className = 'device-card';
+            card.onclick = () => openModal(d, s);
+            
+            let subText = "直近の予定なし";
+            if (s.futureReservations && s.futureReservations.length > 0) {
+                subText = `次回: ${s.futureReservations[0].dateFrom}`;
+            } else if (s.statusDetail && s.statusDetail.expectedDate) {
+                subText = `予定: ${s.statusDetail.expectedDate}`;
+            }
+
+            card.innerHTML = `
+                <div class="device-info">
+                    <h3>${d.name}</h3>
+                    <p>${subText}</p>
+                </div>
+                <span class="status-badge ${statusClassMap[s.status]}">${s.status}</span>
+            `;
+            listDiv.appendChild(card);
+        });
     }
 
-    function openModal(device) {
-        selectedDevice = device;
+    function openModal(device, status) {
+        selectedDevice = { device, status };
         document.getElementById('modalTitle').textContent = device.name;
         const btnArea = document.getElementById('modalButtons');
         btnArea.innerHTML = "";
 
-        // ステータスに応じたボタン生成
-        if (device.status === 'fault') {
-            addModalBtn(btnArea, "✅", "状態を解除する", () => updateStatus('waiting'));
+        if (status.status === '停止中') {
+            addModalBtn(btnArea, "✅", "状態を解除する", () => clearStatus(device.id, device.branchId));
         } else {
-            addModalBtn(btnArea, "📅", "予約する", () => location.href=`reservation_form.html?id=${device.id}&name=${encodeURIComponent(device.name)}`);
-            addModalBtn(btnArea, "🔍", "詳細・履歴を見る", () => location.href=`detail.html?id=${device.id}`);
-            addModalBtn(btnArea, "⚠️", "状態を変更する", () => location.href=`status_change.html?id=${device.id}`);
+            addModalBtn(btnArea, "📅", "予約する", () => location.href=`reservation_form.html?id=${device.id}&branchId=${device.branchId}&name=${encodeURIComponent(device.name)}`);
+            addModalBtn(btnArea, "🔍", "詳細・履歴を見る", () => location.href=`detail.html?id=${device.id}&branchId=${device.branchId}`);
+            addModalBtn(btnArea, "⚠️", "状態を変更する", () => location.href=`status_change.html?id=${device.id}&branchId=${device.branchId}`);
         }
 
         document.getElementById('modalOverlay').style.display = 'block';
@@ -153,15 +183,15 @@
         setTimeout(() => document.getElementById('modalOverlay').style.display = 'none', 300);
     }
 
-    async function updateStatus(newStatus) {
+    async function clearStatus(deviceId, branchId) {
         if (!confirm("状態を解除してもよろしいですか？")) return;
         try {
-            const res = await fetch(`${API_BASE}/devices/status`, {
+            const res = await fetch(`${API_BASE}/status/clear`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ deviceId: selectedDevice.id, status: newStatus })
+                body: JSON.stringify({ deviceId, branchId })
             });
-            if (res.ok) { closeModal(); loadDevices(); }
+            if (res.ok) { window.location.reload(); }
         } catch (e) { alert("更新に失敗しました"); }
     }
 </script>
