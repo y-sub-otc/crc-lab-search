@@ -1,43 +1,122 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-  <meta charset="UTF-8">
-  <title>ホルター予約ログイン</title>
-  <script src="https://cdn.tailwindcss.com"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>機器予約システム - ログイン</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: "Helvetica Neue", Arial, "Hiragino Kaku Gothic ProN", "Hiragino Sans", Meiryo, sans-serif;
+            background-color: #f5f5f5;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+        .login-container {
+            width: 100%;
+            max-width: 400px;
+            padding: 20px;
+            text-align: center;
+        }
+        .logo-area {
+            width: 150px;
+            height: auto;
+            margin: 0 auto 40px;
+        }
+        .logo-area img {
+            width: 100%;
+            height: auto;
+            object-fit: contain;
+        }
+        .input-group {
+            margin-bottom: 20px;
+            text-align: left;
+        }
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-size: 14px;
+        }
+        input {
+            width: 100%;
+            padding: 12px;
+            box-sizing: border-box;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            font-size: 16px;
+        }
+        .login-button {
+            width: 100%;
+            padding: 14px;
+            background-color: #006400;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 20px;
+            transition: background-color 0.3s;
+        }
+        .login-button:hover {
+            background-color: #004d00;
+        }
+    </style>
 </head>
+<body>
 
-<body class="bg-slate-50 flex items-center justify-center h-screen">
-
-  <div class="bg-white p-8 rounded-2xl shadow-xl w-80">
-    <h1 class="text-xl font-bold text-center mb-6">ホルター予約ログイン</h1>
-
-    <input id="userId" type="text" placeholder="ユーザーID"
-      class="w-full mb-4 px-4 py-2 border rounded-lg">
-
-    <input id="password" type="password" placeholder="パスワード"
-      class="w-full mb-6 px-4 py-2 border rounded-lg">
-
-    <button onclick="login()"
-      class="w-full bg-green-700 text-white py-2 rounded-lg font-bold">
-      ログイン
-    </button>
-  </div>
+<div class="login-container">
+    <div class="logo-area">
+        <img src="assets/logo.png" alt="Logo">
+    </div>
+    
+    <div class="input-group">
+        <label>ユーザーID</label>
+        <input type="text" id="userId" placeholder="ユーザーIDを入力">
+    </div>
+    
+    <div class="input-group">
+        <label>パスワード</label>
+        <input type="password" id="password" placeholder="パスワードを入力">
+    </div>
+    
+    <button class="login-button" onclick="login()">ログイン</button>
+</div>
 
 <script>
-function login() {
-  const id = document.getElementById("userId").value.trim();
-  const pw = document.getElementById("password").value.trim();
+    async function login() {
+        const userId = document.getElementById('userId').value;
+        const password = document.getElementById('password').value;
 
-  if (!id || !pw) {
-    alert("ID とパスワードを入力してください");
-    return;
-  }
+        if (!userId || !password) {
+            alert('IDとパスワードを入力してください');
+            return;
+        }
 
-  // ★ 本来はサーバで認証するが、まずは簡易版
-  localStorage.setItem("holterUser", id);
+        try {
+            const response = await fetch('http://localhost:3001/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ userId, password })
+            });
+            const data = await response.json();
 
-  window.location.href = "holter_reservation.html";
-}
+            if (data.success) {
+                // ユーザー情報を保存してホーム画面へ
+                sessionStorage.setItem('user', JSON.stringify(data.user));
+                window.location.href = 'reservation.html';
+            } else {
+                alert('ログインに失敗しました');
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            alert('サーバーに接続できません。api.jsが起動しているか確認してください。');
+        }
+    }
 </script>
 
 </body>
