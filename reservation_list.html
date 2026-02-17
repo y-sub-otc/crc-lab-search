@@ -5,59 +5,51 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>予約一覧</title>
     <style>
+        /* UI統一スタイル */
         body { margin: 0; font-family: sans-serif; background-color: #f5f5f5; color: #333; }
-        
-        /* ヘッダー・ナビゲーション */
         header { background-color: #006400; color: white; padding: 15px; position: sticky; top: 0; z-index: 110; }
         .header-content { max-width: 600px; margin: 0 auto; width: 100%; display: flex; align-items: center; }
         .back-btn { background: none; border: none; color: white; font-size: 20px; cursor: pointer; margin-right: 15px; }
+
         .top-nav { background: white; border-bottom: 1px solid #ddd; position: sticky; top: 54px; z-index: 100; }
         .nav-inner { max-width: 600px; margin: 0 auto; display: flex; justify-content: space-around; }
         .nav-item { flex: 1; text-align: center; padding: 12px 0; font-size: 12px; color: #666; text-decoration: none; border-bottom: 3px solid transparent; }
         .nav-item.active { color: #006400; font-weight: bold; border-bottom: 3px solid #006400; }
         .nav-icon { font-size: 18px; display: block; margin-bottom: 2px; }
 
-        /* コンテンツエリア */
         .container { max-width: 600px; margin: 0 auto; padding: 10px; box-sizing: border-box; }
-        
-        /* 支所セクション（ExpansionTile風） */
-        .branch-section { background: white; margin-bottom: 1px; border-bottom: 1px solid #eee; }
+
+        /* アコーディオン統一デザイン */
+        .branch-section { margin-bottom: 15px; background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 5px rgba(0,0,0,0.05); border: 1px solid #ddd; }
         .branch-header { 
-            padding: 15px; display: flex; justify-content: space-between; align-items: center; 
-            cursor: pointer; font-weight: bold; font-size: 16px; 
+            background: #fff; padding: 15px; display: flex; justify-content: space-between; 
+            align-items: center; cursor: pointer; font-weight: bold; font-size: 15px; border-bottom: 1px solid #eee;
         }
-        .branch-header:hover { background-color: #fafafa; }
-        .branch-content { display: none; padding: 10px; background-color: #fff; }
+        .branch-content { display: none; padding: 5px 0; }
         .branch-content.show { display: block; }
-
-        /* 予約カード */
-        .res-card { 
-            border: 1px solid #ddd; border-radius: 10px; padding: 16px; 
-            margin-bottom: 12px; background: white; 
-        }
-        .res-row { margin-bottom: 8px; font-size: 14px; display: flex; }
-        .res-label { color: #666; width: 110px; flex-shrink: 0; }
-        .res-value { font-weight: 500; color: #000; }
-        .res-device { font-weight: bold; font-size: 15px; color: #006400; }
-
-        /* 取消ボタン */
-        .delete-btn { 
-            width: 100%; padding: 12px; background-color: #006400; color: white; 
-            border: none; border-radius: 8px; font-weight: bold; cursor: pointer; 
-            margin-top: 10px; font-size: 14px; transition: background 0.2s;
-        }
-        .delete-btn:active { background-color: #004d00; }
-        
-        .empty-msg { padding: 20px; text-align: center; color: #999; font-size: 14px; }
-        .arrow { transition: transform 0.3s; }
+        .arrow { transition: transform 0.3s; color: #666; }
         .arrow.open { transform: rotate(180deg); }
+
+        /* カード内スタイル */
+        .res-card { padding: 15px; border-bottom: 1px solid #eee; }
+        .res-card:last-child { border-bottom: none; }
+        .res-row { margin-bottom: 6px; font-size: 14px; display: flex; }
+        .res-label { color: #666; width: 100px; flex-shrink: 0; }
+        .res-value { color: #333; font-weight: 500; }
+        .res-device { color: #006400; font-weight: bold; }
+
+        .delete-btn { 
+            width: 100%; margin-top: 10px; padding: 10px; background: #f44336; color: white; 
+            border: none; border-radius: 6px; font-weight: bold; cursor: pointer;
+        }
+        .empty-msg { text-align: center; padding: 40px; color: #999; }
     </style>
 </head>
 <body>
 
 <header>
     <div class="header-content">
-        <button class="back-btn" onclick="location.href='reservation.html'">◀</button>
+        <button class="back-btn" onclick="location.href='index.html'">◀</button>
         <div style="font-weight: bold;">予約一覧</div>
     </div>
 </header>
@@ -72,85 +64,66 @@
     </div>
 </nav>
 
-<div class="container" id="mainContainer">
-    </div>
+<div class="container" id="mainContainer"></div>
 
 <script>
     const API_BASE = "http://192.168.1.50:3001";
 
-    window.onload = async () => {
-        const user = JSON.parse(sessionStorage.getItem('user'));
-        if (!user) { location.href = 'holter_login.html'; return; }
-        await loadAllData();
-    };
+    window.onload = loadAllData;
 
     async function loadAllData() {
         const container = document.getElementById('mainContainer');
         container.innerHTML = "<div class='empty-msg'>読み込み中...</div>";
-
         try {
             const [bRes, dRes, rRes] = await Promise.all([
-                fetch(`${API_BASE}/branches`),
-                fetch(`${API_BASE}/devices`),
-                fetch(`${API_BASE}/reservations`)
+                fetch(`${API_BASE}/branches`), fetch(`${API_BASE}/devices`), fetch(`${API_BASE}/reservations`)
             ]);
-            
             const branches = await bRes.json();
             const devices = await dRes.json();
             const reservations = await rRes.json();
-            
+
             container.innerHTML = "";
+            if (reservations.length === 0) {
+                container.innerHTML = "<div class='empty-msg'>予約はありません</div>";
+                return;
+            }
 
             branches.forEach(branch => {
-                const branchRes = reservations.filter(r => r.branchId === branch.id);
-                
-                // 支所セクションの作成
+                const bReservations = reservations.filter(r => r.branchId === branch.id);
+                if (bReservations.length === 0) return;
+
                 const section = document.createElement('div');
                 section.className = 'branch-section';
                 
+                let cardsHtml = "";
+                bReservations.forEach(r => {
+                    const device = devices.find(d => d.id === r.deviceId);
+                    cardsHtml += `
+                        <div class="res-card">
+                            <div class="res-row"><span class="res-label">機器名：</span><span class="res-value res-device">${device?.name || '不明'}</span></div>
+                            <div class="res-row"><span class="res-label">利用者：</span><span class="res-value">${r.user}</span></div>
+                            <div class="res-row"><span class="res-label">利用開始日：</span><span class="res-value">${r.dateFrom || r.date}</span></div>
+                            <div class="res-row"><span class="res-label">返却予定日：</span><span class="res-value">${r.dateTo || r.returnDate || "未設定"}</span></div>
+                            <div class="res-row"><span class="res-label">備考：</span><span class="res-value">${r.note || "なし"}</span></div>
+                            <button class="delete-btn" onclick="deleteReservation(${r.id})">予約を取り消す</button>
+                        </div>`;
+                });
+
                 section.innerHTML = `
                     <div class="branch-header" onclick="toggleBranch(this)">
-                        <span>${branch.name}（${branchRes.length}件）</span>
+                        <span>${branch.name}（${bReservations.length}件）</span>
                         <span class="arrow">▼</span>
                     </div>
-                    <div class="branch-content">
-                        ${branchRes.length === 0 ? '<div class="empty-msg">予約なし</div>' : ''}
-                    </div>
+                    <div class="branch-content">${cardsHtml}</div>
                 `;
-                
-                const contentDiv = section.querySelector('.branch-content');
-                
-                branchRes.forEach(r => {
-                    const device = devices.find(d => d.id === r.deviceId);
-                    const deviceName = device ? device.name : "不明な機器";
-                    
-                    const card = document.createElement('div');
-                    card.className = 'res-card';
-                    card.innerHTML = `
-                        <div class="res-row"><span class="res-label">機器名：</span><span class="res-value res-device">${deviceName}</span></div>
-                        <div class="res-row"><span class="res-label">利用者：</span><span class="res-value">${r.user}</span></div>
-                        <div class="res-row"><span class="res-label">貸出先コード：</span><span class="res-value">${r.facilityCode || "-"}</span></div>
-                        <div class="res-row"><span class="res-label">貸出先名称：</span><span class="res-value">${r.facilityName || "-"}</span></div>
-                        <div class="res-row"><span class="res-label">利用開始日：</span><span class="res-value">${r.dateFrom || r.date}</span></div>
-                        <div class="res-row"><span class="res-label">返返予定日：</span><span class="res-value">${r.dateTo || r.returnDate || "未設定"}</span></div>
-                        <div class="res-row"><span class="res-label">備考：</span><span class="res-value">${r.note || "なし"}</span></div>
-                        <button class="delete-btn" onclick="deleteReservation(${r.id})">予約を取り消す</button>
-                    `;
-                    contentDiv.appendChild(card);
-                });
-                
                 container.appendChild(section);
             });
-        } catch (e) {
-            container.innerHTML = "<div class='empty-msg'>通信エラーが発生しました</div>";
-        }
+        } catch (e) { container.innerHTML = "<div class='empty-msg'>通信エラー</div>"; }
     }
 
     function toggleBranch(header) {
-        const content = header.nextElementSibling;
-        const arrow = header.querySelector('.arrow');
-        content.classList.toggle('show');
-        arrow.classList.toggle('open');
+        header.nextElementSibling.classList.toggle('show');
+        header.querySelector('.arrow').classList.toggle('open');
     }
 
     async function deleteReservation(id) {
@@ -161,11 +134,8 @@
                 alert("予約を取り消しました");
                 loadAllData();
             }
-        } catch (e) {
-            alert("通信に失敗しました");
-        }
+        } catch (e) { alert("取り消しに失敗しました"); }
     }
 </script>
-
 </body>
 </html>

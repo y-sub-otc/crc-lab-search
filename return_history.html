@@ -5,51 +5,50 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>返却履歴</title>
     <style>
+        /* 他のページと完全に統一した基本スタイル */
         body { margin: 0; font-family: sans-serif; background-color: #f5f5f5; color: #333; }
         
-        /* ヘッダー・ナビゲーション */
         header { background-color: #006400; color: white; padding: 15px; position: sticky; top: 0; z-index: 110; }
         .header-content { max-width: 600px; margin: 0 auto; width: 100%; display: flex; align-items: center; }
         .back-btn { background: none; border: none; color: white; font-size: 20px; cursor: pointer; margin-right: 15px; }
+
         .top-nav { background: white; border-bottom: 1px solid #ddd; position: sticky; top: 54px; z-index: 100; }
         .nav-inner { max-width: 600px; margin: 0 auto; display: flex; justify-content: space-around; }
         .nav-item { flex: 1; text-align: center; padding: 12px 0; font-size: 12px; color: #666; text-decoration: none; border-bottom: 3px solid transparent; }
         .nav-item.active { color: #006400; font-weight: bold; border-bottom: 3px solid #006400; }
         .nav-icon { font-size: 18px; display: block; margin-bottom: 2px; }
 
-        /* コンテンツエリア */
         .container { max-width: 600px; margin: 0 auto; padding: 10px; box-sizing: border-box; }
-        
-        /* 支所セクション */
-        .branch-section { background: white; margin-bottom: 1px; border-bottom: 1px solid #eee; }
-        .branch-header { 
-            padding: 15px; display: flex; justify-content: space-between; align-items: center; 
-            cursor: pointer; font-weight: bold; font-size: 16px; 
+
+        /* 支所セクション（UI統一：白背景・影・適切な間隔） */
+        .branch-section { 
+            margin-bottom: 15px; background: white; border-radius: 8px; 
+            overflow: hidden; box-shadow: 0 2px 5px rgba(0,0,0,0.05); border: 1px solid #ddd; 
         }
-        .branch-header:hover { background-color: #fafafa; }
-        .branch-content { display: none; padding: 10px; background-color: #fff; }
+        .branch-header { 
+            background: #fff; padding: 15px; display: flex; justify-content: space-between; 
+            align-items: center; cursor: pointer; font-weight: bold; font-size: 15px; border-bottom: 1px solid #eee;
+        }
+        .branch-content { display: none; padding: 5px 0; }
         .branch-content.show { display: block; }
+        .arrow { transition: transform 0.3s; color: #666; }
+        .arrow.open { transform: rotate(180deg); }
 
         /* 履歴カード */
-        .res-card { 
-            border: 1px solid #ddd; border-radius: 10px; padding: 16px; 
-            margin-bottom: 12px; background: white; 
-        }
-        .res-row { margin-bottom: 8px; font-size: 14px; display: flex; }
-        .res-label { color: #666; width: 110px; flex-shrink: 0; }
-        .res-value { font-weight: 500; color: #000; }
-        .res-device { font-weight: bold; font-size: 15px; color: #006400; }
-
-        .empty-msg { padding: 20px; text-align: center; color: #999; font-size: 14px; }
-        .arrow { transition: transform 0.3s; }
-        .arrow.open { transform: rotate(180deg); }
+        .res-card { padding: 15px; border-bottom: 1px solid #eee; }
+        .res-card:last-child { border-bottom: none; }
+        .res-row { margin-bottom: 6px; font-size: 14px; display: flex; }
+        .res-label { color: #666; width: 100px; flex-shrink: 0; }
+        .res-value { color: #333; font-weight: 500; }
+        .res-device { color: #006400; font-weight: bold; }
+        .empty-msg { text-align: center; padding: 40px; color: #999; }
     </style>
 </head>
 <body>
 
 <header>
     <div class="header-content">
-        <button class="back-btn" onclick="location.href='reservation.html'">◀</button>
+        <button class="back-btn" onclick="location.href='index.html'">◀</button>
         <div style="font-weight: bold;">返却履歴</div>
     </div>
 </header>
@@ -64,19 +63,14 @@
     </div>
 </nav>
 
-<div class="container" id="mainContainer">
-    </div>
+<div class="container" id="mainContainer"></div>
 
 <script>
     const API_BASE = "http://192.168.1.50:3001";
 
-    window.onload = async () => {
-        const user = JSON.parse(sessionStorage.getItem('user'));
-        if (!user) { location.href = 'holter_login.html'; return; }
-        await loadHistoryData();
-    };
+    window.onload = loadData;
 
-    async function loadHistoryData() {
+    async function loadData() {
         const container = document.getElementById('mainContainer');
         container.innerHTML = "<div class='empty-msg'>読み込み中...</div>";
 
@@ -90,34 +84,28 @@
             const branches = await bRes.json();
             const devices = await dRes.json();
             const returns = await rRes.json();
-            
+
             container.innerHTML = "";
 
+            if (returns.length === 0) {
+                container.innerHTML = "<div class='empty-msg'>返却履歴はありません</div>";
+                return;
+            }
+
+            // 履歴を日付の新しい順にソート
+            returns.sort((a, b) => b.date.localeCompare(a.date));
+
             branches.forEach(branch => {
-                // その支所に属する機器のIDリストを取得
-                const branchDeviceIds = devices.filter(d => d.branchId === branch.id).map(d => d.id);
-                // その支所の機器に関連する返却履歴をフィルタ
-                const branchReturns = returns.filter(r => branchDeviceIds.includes(r.deviceId));
-                
+                const bReturns = returns.filter(r => r.branchId === branch.id);
+                if (bReturns.length === 0) return;
+
                 const section = document.createElement('div');
                 section.className = 'branch-section';
-                
-                section.innerHTML = `
-                    <div class="branch-header" onclick="toggleBranch(this)">
-                        <span>${branch.name}（${branchReturns.length}件）</span>
-                        <span class="arrow">▼</span>
-                    </div>
-                    <div class="branch-content">
-                        ${branchReturns.length === 0 ? '<div class="empty-msg">履歴なし</div>' : ''}
-                    </div>
-                `;
-                
-                const contentDiv = section.querySelector('.branch-content');
-                
-                // 履歴を日付の新しい順に並び替え
-                branchReturns.sort((a, b) => b.date.localeCompare(a.date));
 
-                branchReturns.forEach(r => {
+                const contentDiv = document.createElement('div');
+                contentDiv.className = 'branch-content';
+
+                bReturns.forEach(r => {
                     const device = devices.find(d => d.id === r.deviceId);
                     const deviceName = device ? device.name : "不明な機器";
                     
@@ -132,7 +120,14 @@
                     `;
                     contentDiv.appendChild(card);
                 });
-                
+
+                section.innerHTML = `
+                    <div class="branch-header" onclick="toggleBranch(this)">
+                        <span>${branch.name}（${bReturns.length}件）</span>
+                        <span class="arrow">▼</span>
+                    </div>
+                `;
+                section.appendChild(contentDiv);
                 container.appendChild(section);
             });
         } catch (e) {
@@ -145,6 +140,5 @@
         header.querySelector('.arrow').classList.toggle('open');
     }
 </script>
-
 </body>
 </html>
