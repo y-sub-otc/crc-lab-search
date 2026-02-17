@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>予約図解</title>
+    <style>
+        body { margin: 0; font-family: sans-serif; background-color: #f5f5f5; color: #333; }
+        header { background-color: #006400; color: white; padding: 15px; position: sticky; top: 0; z-index: 110; }
+        .header-content { max-width: 800px; margin: 0 auto; width: 100%; display: flex; align-items: center; }
+        .back-btn { background: none; border: none; color: white; font-size: 20px; cursor: pointer; margin-right: 15px; }
+        
+        .top-nav { background: white; border-bottom: 1px solid #ddd; position: sticky; top: 54px; z-index: 100; }
+        .nav-inner { max-width: 600px; margin: 0 auto; display: flex; justify-content: space-around; }
+        .nav-item { flex: 1; text-align: center; padding: 12px 0; font-size: 12px; color: #666; text-decoration: none; border-bottom: 3px solid transparent; }
+        .nav-item.active { color: #006400; font-weight: bold; border-bottom: 3px solid #006400; }
+        .nav-icon { font-size: 18px; display: block; margin-bottom: 2px; }
+
+        .container { max-width: 900px; margin: 0 auto; padding: 10px; box-sizing: border-box; }
+        
+        .month-selector { 
+            display: flex; justify-content: center; align-items: center; 
+            padding: 15px; background: white; margin-bottom: 10px; border-radius: 8px; font-weight: bold;
+        }
+        .month-btn { background: none; border: 1px solid #ddd; padding: 5px 15px; cursor: pointer; border-radius: 4px; margin: 0 20px; }
+
+        /* ガントチャートの構造 */
+        .gantt-wrapper { background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+        .gantt-scroll { overflow-x: auto; position: relative; }
+        
+        table { border-collapse: collapse; min-width: 100%; table-layout: fixed; }
+        th, td { border: 1px solid #eee; padding: 8px 0; text-align: center; font-size: 11px; }
+        
+        .device-col { width: 120px; position: sticky; left: 0; background: #f9f9f9; z-index: 10; font-weight: bold; font-size: 12px; }
+        .day-col { width: 34px; }
+        
+        /* ステータス色（Flutter版に準拠） */
+        .status-cell { height: 26px; margin: 2px; border-radius: 2px; }
+        .waiting { background-color: #e0e0e0; } /* 待機中: グレー */
+        .reserved { background-color: #4CAF50; } /* 予約中: 緑 */
+        .rented { background-color: #FF9800; }   /* 貸出中: オレンジ */
+        .stopped { background-color: #F44336; }  /* 停止中: 赤 */
+
+        .legend { display: flex; justify-content: center; gap: 15px; padding: 15px; font-size: 12px; }
+        .legend-item { display: flex; align-items: center; }
+        .legend-box { width: 12px; height: 12px; margin-right: 5px; border-radius: 2px; }
+    </style>
+</head>
+<body>
+
+<header>
+    <div class="header-content">
+        <button class="back-btn" onclick="location.href='reservation.html'">◀</button>
+        <div style="font-weight: bold;">予約図解（ガントチャート）</div>
+    </div>
+</header>
+
+<nav class="top-nav">
+    <div class="nav-inner">
+        <a href="reservation.html" class="nav-item"><span class="nav-icon">📋</span>一覧</a>
+        <a href="reservation_list.html" class="nav-item"><span class="nav-icon">📅</span>予約</a>
+        <a href="rental_list.html" class="nav-item"><span class="nav-icon">📤</span>貸出</a>
+        <a href="return_history.html" class="nav-item"><span class="nav-icon">🕒</span>履歴</a>
+        <a href="gantt.html" class="nav-item active"><span class="nav-icon">📊</span>図解</a>
+    </div>
+</nav>
+
+<div class="container">
+    <div class="month-selector">
+        <button class="month-btn" onclick="changeMonth(-1)">◀ 前月</button>
+        <span id="currentMonthLabel">2024年 5月</span>
+        <button class="month-btn" onclick="changeMonth(1)">次月 ▶</button>
+    </div>
+
+    <div class="gantt-wrapper">
+        <div class="gantt-scroll">
+            <table id="ganttTable">
+                <thead id="ganttHeader"></thead>
+                <tbody id="ganttBody"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="legend">
+        <div class="legend-item"><div class="legend-box waiting"></div>待機中</div>
+        <div class="legend-item"><div class="legend-box reserved"></div>予約あり</div>
+        <div class="legend-item"><div class="legend-box rented"></div>貸出中</div>
+        <div class="legend-item"><div class="legend-box stopped"></div>停止中</div>
+    </div>
+</div>
+
+<script>
+    const API_BASE = "http://192.168.1.50:3001";
+    let viewDate = new Date();
+    viewDate.setDate(1);
+
+    window.onload = async () => {
+        const user = JSON.parse(sessionStorage.getItem('user'));
+        if (!user) { location.href = 'holter_login.html'; return; }
+        renderGantt();
+    };
+
+    function changeMonth(diff) {
+        viewDate.setMonth(viewDate.getMonth() + diff);
+        renderGantt();
+    }
+
+    async function renderGantt() {
+        const year = viewDate.getFullYear();
+        const month = viewDate.getMonth();
+        document.getElementById('currentMonthLabel').textContent = `${year}年 ${month + 1}月`;
+
+        // 日付リスト生成
+        const daysInMonth = new Date(year, month + 1, 0).getDate();
+        const days = Array.from({length: daysInMonth}, (_, i) => i + 1);
+
+        // ヘッダー生成
+        let headHtml = `<tr><th class="device-col">機器名</th>`;
+        days.forEach(d => { headHtml += `<th class="day-col">${d}</th>`; });
+        headHtml += `</tr>`;
+        document.getElementById('ganttHeader').innerHTML = headHtml;
+
+        try {
+            const [dRes, rRes, rentRes, sRes] = await Promise.all([
+                fetch(`${API_BASE}/devices`),
+                fetch(`${API_BASE}/reservations`),
+                fetch(`${API_BASE}/rentals`),
+                fetch(`${API_BASE}/status`)
+            ]);
+            
+            const devices = await dRes.json();
+            const reservations = await rRes.json();
+            const rentals = await rentRes.json();
+            const statusList = await sRes.json();
+
+            let bodyHtml = "";
+            devices.forEach(dev => {
+                bodyHtml += `<tr><td class="device-col">${dev.name}</td>`;
+                
+                days.forEach(d => {
+                    const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+                    const status = getStatusForDate(dev.id, dateStr, reservations, rentals, statusList);
+                    bodyHtml += `<td class="day-col"><div class="status-cell ${status}"></div></td>`;
+                });
+                
+                bodyHtml += `</tr>`;
+            });
+            document.getElementById('ganttBody').innerHTML = bodyHtml;
+        } catch (e) { console.error(e); }
+    }
+
+    function getStatusForDate(deviceId, dateStr, reservations, rentals, statusList) {
+        // 1. 停止中チェック
+        const st = statusList.find(s => s.deviceId === deviceId);
+        if (st && st.status === "停止中") return "stopped";
+
+        // 2. 貸出中チェック
+        const rental = rentals.find(r => r.deviceId === deviceId && r.date <= dateStr && (!r.expectedReturnDate || dateStr <= r.expectedReturnDate));
+        if (rental) return "rented";
+
+        // 3. 予約チェック
+        const res = reservations.find(r => r.deviceId === deviceId && (r.dateFrom || r.date) <= dateStr && dateStr <= (r.dateTo || r.returnDate));
+        if (res) return "reserved";
+
+        return "waiting";
+    }
+</script>
+
+</body>
+</html>

@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>貸し出し一覧</title>
+    <style>
+        body { margin: 0; font-family: sans-serif; background-color: #f5f5f5; color: #333; }
+        header { background-color: #006400; color: white; padding: 15px; position: sticky; top: 0; z-index: 110; }
+        .header-content { max-width: 600px; margin: 0 auto; width: 100%; display: flex; align-items: center; }
+        .back-btn { background: none; border: none; color: white; font-size: 20px; cursor: pointer; margin-right: 15px; }
+        
+        .top-nav { background: white; border-bottom: 1px solid #ddd; position: sticky; top: 54px; z-index: 100; }
+        .nav-inner { max-width: 600px; margin: 0 auto; display: flex; justify-content: space-around; }
+        .nav-item { flex: 1; text-align: center; padding: 12px 0; font-size: 12px; color: #666; text-decoration: none; border-bottom: 3px solid transparent; }
+        .nav-item.active { color: #006400; font-weight: bold; border-bottom: 3px solid #006400; }
+        .nav-icon { font-size: 18px; display: block; margin-bottom: 2px; }
+
+        .container { max-width: 600px; margin: 0 auto; padding: 10px; box-sizing: border-box; }
+        .branch-section { background: white; margin-bottom: 1px; border-bottom: 1px solid #eee; }
+        .branch-header { padding: 15px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; font-weight: bold; font-size: 16px; }
+        .branch-content { display: none; padding: 10px; background-color: #fff; }
+        .branch-content.show { display: block; }
+
+        .res-card { border: 1px solid #ddd; border-radius: 10px; padding: 16px; margin-bottom: 12px; background: white; }
+        .res-row { margin-bottom: 8px; font-size: 14px; display: flex; }
+        .res-label { color: #666; width: 110px; flex-shrink: 0; }
+        .res-value { font-weight: 500; color: #000; }
+        .res-device { font-weight: bold; font-size: 15px; color: #006400; }
+
+        .submit-btn { width: 100%; padding: 12px; background-color: #006400; color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; margin-top: 10px; font-size: 14px; }
+        
+        /* 返却ダイアログ用 */
+        #dialogOverlay { position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); display:none; z-index:200; align-items:center; justify-content:center; }
+        .dialog { background:white; padding:20px; border-radius:12px; width:90%; max-width:400px; }
+        .dialog-title { font-weight:bold; margin-bottom:15px; font-size:18px; }
+        .radio-group { margin-bottom:20px; }
+        .radio-item { display:flex; align-items:center; padding:10px 0; border-bottom:1px solid #eee; cursor:pointer; }
+        .radio-item input { margin-right:15px; transform: scale(1.3); }
+        .dialog-btns { display:flex; justify-content: flex-end; gap:10px; }
+        .dialog-btn { border:none; background:none; color:#006400; font-weight:bold; padding:10px; cursor:pointer; }
+        
+        .empty-msg { padding: 20px; text-align: center; color: #999; font-size: 14px; }
+        .arrow { transition: transform 0.3s; }
+        .arrow.open { transform: rotate(180deg); }
+    </style>
+</head>
+<body>
+
+<header>
+    <div class="header-content">
+        <button class="back-btn" onclick="location.href='reservation.html'">◀</button>
+        <div style="font-weight: bold;">貸し出し一覧</div>
+    </div>
+</header>
+
+<nav class="top-nav">
+    <div class="nav-inner">
+        <a href="reservation.html" class="nav-item"><span class="nav-icon">📋</span>一覧</a>
+        <a href="reservation_list.html" class="nav-item"><span class="nav-icon">📅</span>予約</a>
+        <a href="rental_list.html" class="nav-item active"><span class="nav-icon">📤</span>貸出</a>
+        <a href="return_history.html" class="nav-item"><span class="nav-icon">🕒</span>履歴</a>
+        <a href="gantt.html" class="nav-item"><span class="nav-icon">📊</span>図解</a>
+    </div>
+</nav>
+
+<div class="container" id="mainContainer"></div>
+
+<div id="dialogOverlay">
+    <div class="dialog">
+        <div class="dialog-title">返却時の状態を選択</div>
+        <div class="radio-group" id="conditionOptions">
+            <label class="radio-item"><input type="radio" name="condition" value="特に問題なし" checked> 特に問題なし</label>
+            <label class="radio-item"><input type="radio" name="condition" value="軽微な汚れあり"> 軽微な汚れあり</label>
+            <label class="radio-item"><input type="radio" name="condition" value="故障の可能性あり"> 故障の可能性あり</label>
+            <label class="radio-item"><input type="radio" name="condition" value="その他"> その他</label>
+        </div>
+        <div class="dialog-btns">
+            <button class="dialog-btn" onclick="closeReturnDialog()">キャンセル</button>
+            <button class="dialog-btn" onclick="confirmReturn()">OK</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    const API_BASE = "http://192.168.1.50:3001";
+    let currentRental = null;
+
+    window.onload = async () => {
+        const user = JSON.parse(sessionStorage.getItem('user'));
+        if (!user) { location.href = 'holter_login.html'; return; }
+        await loadRentalData();
+    };
+
+    async function loadRentalData() {
+        const container = document.getElementById('mainContainer');
+        container.innerHTML = "<div class='empty-msg'>読み込み中...</div>";
+        try {
+            const [bRes, dRes, rRes] = await Promise.all([
+                fetch(`${API_BASE}/branches`),
+                fetch(`${API_BASE}/devices`),
+                fetch(`${API_BASE}/rentals`)
+            ]);
+            const branches = await bRes.json();
+            const devices = await dRes.json();
+            const rentals = await rRes.json();
+            container.innerHTML = "";
+
+            branches.forEach(branch => {
+                const branchRentals = rentals.filter(r => r.branchId === branch.id);
+                const section = document.createElement('div');
+                section.className = 'branch-section';
+                section.innerHTML = `
+                    <div class="branch-header" onclick="toggleBranch(this)">
+                        <span>${branch.name}（${branchRentals.length}件）</span>
+                        <span class="arrow">▼</span>
+                    </div>
+                    <div class="branch-content">
+                        ${branchRentals.length === 0 ? '<div class="empty-msg">貸し出しなし</div>' : ''}
+                    </div>
+                `;
+                const contentDiv = section.querySelector('.branch-content');
+                branchRentals.forEach(r => {
+                    const device = devices.find(d => d.id === r.deviceId);
+                    const card = document.createElement('div');
+                    card.className = 'res-card';
+                    card.innerHTML = `
+                        <div class="res-row"><span class="res-label">機器名：</span><span class="res-value res-device">${device ? device.name : "不明"}</span></div>
+                        <div class="res-row"><span class="res-label">利用者：</span><span class="res-value">${r.user}</span></div>
+                        <div class="res-row"><span class="res-label">貸出先コード：</span><span class="res-value">${r.facilityCode || "-"}</span></div>
+                        <div class="res-row"><span class="res-label">貸出先名称：</span><span class="res-value">${r.facilityName || "-"}</span></div>
+                        <div class="res-row"><span class="res-label">貸出日：</span><span class="res-value">${r.date}</span></div>
+                        <div class="res-row"><span class="res-label">備考：</span><span class="res-value">${r.note || "なし"}</span></div>
+                        <button class="submit-btn" onclick="openReturnDialog(${JSON.stringify(r).replace(/"/g, '&quot;')})">返却する</button>
+                    `;
+                    contentDiv.appendChild(card);
+                });
+                container.appendChild(section);
+            });
+        } catch (e) { container.innerHTML = "<div class='empty-msg'>通信エラー</div>"; }
+    }
+
+    function toggleBranch(header) {
+        header.nextElementSibling.classList.toggle('show');
+        header.querySelector('.arrow').classList.toggle('open');
+    }
+
+    function openReturnDialog(rental) {
+        currentRental = rental;
+        document.getElementById('dialogOverlay').style.display = 'flex';
+    }
+
+    function closeReturnDialog() {
+        document.getElementById('dialogOverlay').style.display = 'none';
+        currentRental = null;
+    }
+
+    async function confirmReturn() {
+        const condition = document.querySelector('input[name="condition"]:checked').value;
+        const today = new Date().toISOString().split('T')[0];
+        
+        try {
+            const res = await fetch(`${API_BASE}/returns`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    branchId: currentRental.branchId,
+                    deviceId: currentRental.deviceId,
+                    user: currentRental.user,
+                    date: today,
+                    time: "10:00",
+                    condition: condition
+                })
+            });
+            if (res.ok) {
+                alert("返却を登録しました");
+                closeReturnDialog();
+                loadRentalData();
+            }
+        } catch (e) { alert("返却登録に失敗しました"); }
+    }
+</script>
+</body>
+</html>
