@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>機器予約・管理</title>
     <style>
-        /* スタイルは維持（ワイド画面対応済） */
         body { margin: 0; font-family: sans-serif; background-color: #f5f5f5; padding-top: 10px; }
         header { background-color: #006400; color: white; padding: 15px; position: sticky; top: 0; z-index: 110; }
         .header-content { max-width: 600px; margin: 0 auto; width: 100%; display: flex; align-items: center; }
@@ -17,42 +16,37 @@
         .nav-icon { font-size: 18px; display: block; margin-bottom: 2px; }
         .container { max-width: 600px; margin: 0 auto; padding: 10px; box-sizing: border-box; }
         .branch-section { margin-bottom: 10px; border-radius: 8px; overflow: hidden; border: 1px solid #ddd; }
-        .branch-header { background: #eee; padding: 12px 15px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; font-weight: bold; font-size: 14px; }
+        .branch-header { background: #eee; padding: 12px 15px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; font-weight: bold; font-size: 14px; color: #444; }
         .branch-content { display: none; background: #fff; }
         .branch-content.show { display: block; }
         .arrow { transition: transform 0.3s; font-size: 12px; }
         .arrow.open { transform: rotate(180deg); }
         .device-card { padding: 15px; border-bottom: 1px solid #eee; cursor: pointer; }
-        .card-header { display: flex; justify-content: space-between; align-items: center; }
-        .device-name { font-weight: bold; font-size: 15px; }
-        .status-badge { padding: 3px 8px; border-radius: 4px; color: white; font-size: 10px; }
+        .device-card:last-child { border-bottom: none; }
+        .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; }
+        .device-name { font-weight: bold; font-size: 15px; color: #333; }
+        .status-badge { padding: 3px 8px; border-radius: 4px; color: white; font-size: 10px; font-weight: bold; }
         .waiting { background: #2196F3; } .reserved { background: #4CAF50; } .rented { background: #FF9800; } .stopped { background: #F44336; }
-        
-        /* モーダル：ワイド対応 */
+        .status-row { font-size: 12px; color: #555; margin-top: 4px; line-height: 1.5; }
         #modalOverlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: none; z-index: 200; }
-        #modalContent { 
-            position: fixed; bottom: -100%; left: 50%; transform: translateX(-50%); 
-            width: 100%; max-width: 600px; background: white; 
-            border-top-left-radius: 20px; border-top-right-radius: 20px; transition: bottom 0.3s ease; z-index: 210;
-        }
+        #modalContent { position: fixed; bottom: -100%; left: 50%; transform: translateX(-50%); width: 100%; max-width: 600px; background: white; border-top-left-radius: 20px; border-top-right-radius: 20px; transition: bottom 0.3s ease; z-index: 210; }
         #modalContent.show { bottom: 0; }
         .modal-header { padding: 15px; border-bottom: 1px solid #eee; text-align: center; font-weight: bold; }
         .modal-btn { width: 100%; padding: 15px; border: none; background: none; text-align: left; font-size: 16px; cursor: pointer; display: flex; align-items: center; }
+        .modal-btn i { margin-right: 15px; font-style: normal; }
     </style>
 </head>
 <body>
 
-<header><div class="header-content"><button class="back-btn" onclick="location.href='index.html'">◀</button><b>機器予約・管理</b></div></header>
+<header><div class="header-content"><button class="back-btn" onclick="location.href='index.html'">◀</button><div style="font-weight: bold;">機器予約・管理</div></div></header>
 
-<nav class="top-nav">
-    <div class="nav-inner">
-        <a href="reservation.html" class="nav-item active"><span class="nav-icon">📋</span>一覧</a>
-        <a href="reservation_list.html" class="nav-item"><span class="nav-icon">📅</span>予約</a>
-        <a href="rental_list.html" class="nav-item"><span class="nav-icon">📤</span>貸出</a>
-        <a href="return_history.html" class="nav-item"><span class="nav-icon">🕒</span>履歴</a>
-        <a href="gantt.html" class="nav-item"><span class="nav-icon">📊</span>図解</a>
-    </div>
-</nav>
+<nav class="top-nav"><div class="nav-inner">
+    <a href="reservation.html" class="nav-item active"><span class="nav-icon">📋</span>一覧</a>
+    <a href="reservation_list.html" class="nav-item"><span class="nav-icon">📅</span>予約</a>
+    <a href="rental_list.html" class="nav-item"><span class="nav-icon">📤</span>貸出</a>
+    <a href="return_history.html" class="nav-item"><span class="nav-icon">🕒</span>履歴</a>
+    <a href="gantt.html" class="nav-item"><span class="nav-icon">📊</span>図解</a>
+</div></nav>
 
 <div class="container" id="mainContainer"></div>
 
@@ -66,18 +60,20 @@
 <script>
     const API_BASE = "http://192.168.1.50:3001";
 
-    window.onload = async () => {
-        // --- キャッシュ/履歴対策：ハッシュを消去し、自動メニューを防ぐ ---
-        if (window.location.hash) {
-            history.replaceState("", document.title, window.location.pathname + window.location.search);
+    // 【最重要】戻ってきたときに強制リロードする処理
+    window.addEventListener('pageshow', (event) => {
+        if (event.persisted || (window.performance && window.performance.navigation.type === 2)) {
+            window.location.reload();
         }
+    });
 
+    window.onload = async () => {
         const user = JSON.parse(sessionStorage.getItem('user'));
         if (!user) { location.href = 'holter_login.html'; return; }
         
         await loadData();
 
-        // 支所の開閉状態だけ復元
+        // 支所の開閉状態だけ復元（メニューは絶対に出さない）
         const savedBranchId = localStorage.getItem('last_active_branch');
         if (savedBranchId) {
             const content = document.getElementById(`branch-content-${savedBranchId}`);
@@ -107,13 +103,29 @@
                 bDevices.forEach(dev => {
                     const status = statusList.find(s => s.deviceId === dev.id) || { status: "待機中" };
                     const badgeClass = { '待機中': 'waiting', '予約あり': 'reserved', '貸し出し中': 'rented', '停止中': 'stopped' }[status.status];
-                    
+                    const devRes = reservations.filter(r => r.deviceId === dev.id).sort((a, b) => (a.dateFrom || a.date).localeCompare(b.dateFrom || b.date));
+
+                    // カード内情報の復活ロジック
+                    let infoHtml = "";
+                    if (status.status === "停止中") {
+                        infoHtml = `<div class="status-row" style="color:#F44336;">🚫 理由: ${status.note || "故障中"}</div>`;
+                    } else if (status.status === "貸し出し中") {
+                        const rental = rentals.find(r => r.deviceId === dev.id);
+                        infoHtml = `<div class="status-row"><b>📤 貸出先:</b> ${rental?.facilityName || "不明"}</div>`;
+                        if (devRes.length > 0) infoHtml += `<div class="status-row" style="font-size:11px; color:#888;"><b>📅 次回:</b> ${devRes[0].facilityName} (${devRes[0].date})</div>`;
+                    } else if (status.status === "予約あり") {
+                        infoHtml = `<div class="status-row"><b>📅 予約:</b> ${devRes.map(r => `【${r.facilityName}】`).join(" ")}</div>`;
+                    } else {
+                        infoHtml = `<div class="status-row" style="color:#999;">待機中</div>`;
+                    }
+
                     cardsHtml += `
-                        <div class="device-card" onclick='openManualMenu(${JSON.stringify(dev)}, ${JSON.stringify(status)})'>
+                        <div class="device-card" onclick='openModal(${JSON.stringify(dev)}, ${JSON.stringify(status)})'>
                             <div class="card-header">
                                 <span class="device-name">${dev.name}</span>
                                 <span class="status-badge ${badgeClass}">${status.status}</span>
                             </div>
+                            ${infoHtml}
                         </div>`;
                 });
                 const div = document.createElement('div');
@@ -126,27 +138,25 @@
                     <div class="branch-content" id="branch-content-${branch.id}">${cardsHtml}</div>`;
                 container.appendChild(div);
             });
-        } catch (e) { container.innerHTML = "エラー"; }
+        } catch (e) { container.innerHTML = "読込エラー"; }
     }
 
     function toggleBranch(id) {
         const content = document.getElementById(`branch-content-${id}`);
         const arrow = document.getElementById(`arrow-${id}`);
-                const isShow = content.classList.toggle('show');
+        const isShow = content.classList.toggle('show');
         arrow.classList.toggle('open');
         if (isShow) localStorage.setItem('last_active_branch', id);
         else localStorage.removeItem('last_active_branch');
     }
 
-    // 手動クリック時のみ動くメニュー
-    function openManualMenu(device, status) {
+    function openModal(device, status) {
         localStorage.setItem('last_active_branch', device.branchId);
         document.getElementById('selectedDeviceName').textContent = device.name;
         const btnArea = document.getElementById('modalButtons');
         btnArea.innerHTML = "";
-
         if (status.status === "停止中") {
-            addBtn(btnArea, "✅", "停止を解除する", () => clearStatus(device.id, device.branchId));
+            addBtn(btnArea, "✅", "停止を解除", () => clearStatus(device.id, device.branchId));
         } else if (status.status === "貸し出し中") {
             addBtn(btnArea, "🔍", "詳細を見る", () => location.href=`detail.html?id=${device.id}&branchId=${device.branchId}`);
         } else {
@@ -169,6 +179,12 @@
     function closeModal() {
         document.getElementById('modalContent').classList.remove('show');
         setTimeout(() => document.getElementById('modalOverlay').style.display = 'none', 300);
+    }
+
+    async function clearStatus(deviceId, branchId) {
+        if (!confirm("解除しますか？")) return;
+        await fetch(`${API_BASE}/status/clear`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ deviceId, branchId }) });
+        location.reload();
     }
 </script>
 </body>
