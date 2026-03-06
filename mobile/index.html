@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>メニュー</title>
+    
+    <!-- PWA設定 -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black">
+    <meta name="apple-mobile-web-app-title" content="CRCメニュー">
+    <link rel="apple-touch-icon" href="icon-256.png">
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;600;900&display=swap');
+        body { 
+            font-family: 'Noto Sans JP', sans-serif; 
+            background-color: #ffffff;
+            -webkit-tap-highlight-color: transparent;
+            user-select: none; /* 誤操作防止 */
+        }
+    </style>
+</head>
+<body class="text-black min-h-screen">
+    
+    <div class="max-w-md mx-auto bg-white min-h-screen relative shadow-sm border-x border-gray-100">
+        
+        <!-- ヘッダー: ログイン/ログアウト要素を完全に排除 -->
+        <header class="sticky top-0 bg-white z-10 flex items-center justify-center h-[48px] border-b-2 border-[#006400]">
+            <h1 class="text-[18px] font-black">メニュー</h1>
+            <div class="absolute right-[12px] flex items-center h-full">
+                <img src="assets/logo.png" alt="Logo" class="h-[30px] object-contain">
+            </div>
+        </header>
+
+        <!-- メニューグリッド -->
+        <main class="p-[16px]">
+            <div class="grid grid-cols-2 gap-[11px]">
+
+                <!-- 1. 社内連絡専用 -->
+                <a href="https://www.crc-group.co.jp/onlineshop/" target="_blank" rel="noopener noreferrer" class="bg-white rounded-[16px] border border-black/10 p-[7px] flex flex-col items-center justify-center aspect-[1.7/1] active:scale-95 active:bg-gray-50 transition-all duration-200 shadow-sm">
+                    <div class="text-[23px] mb-1.5">✉</div>
+                    <div class="text-[12px] font-semibold text-center leading-[1.2]">社内連絡専用<br>ページ</div>
+                </a>
+
+                <!-- 2. X’sion -->
+                <a href="https://xsion-service.com/crc_group/login" target="_blank" rel="noopener noreferrer" class="bg-white rounded-[16px] border border-black/10 p-[7px] flex flex-col items-center justify-center aspect-[1.7/1] active:scale-95 active:bg-gray-50 transition-all duration-200 shadow-sm">
+                    <div class="text-[23px] mb-1.5">🔗</div>
+                    <div class="text-[12px] font-semibold text-center">X’sion</div>
+                </a>
+
+                <!-- 3. 総合検査案内 語句検索 (隣のフォルダを参照 + 別タブ) -->
+                <a href="../lab-search/index.html" target="_blank" rel="noopener noreferrer" class="bg-white rounded-[16px] border border-black/10 p-[7px] flex flex-col items-center justify-center aspect-[1.7/1] active:scale-95 active:bg-gray-50 transition-all duration-200 shadow-sm">
+                    <div class="text-[23px] mb-1.5">🔍</div>
+                    <div class="text-[12px] font-semibold text-center leading-[1.2]">総合検査案内<br>語句検索</div>
+                </a>
+
+                <!-- 4. ホルター測定機器 -->
+                <a href="http://133.199.166.123:3001/holter_login.html" target="_blank" rel="noopener noreferrer" class="bg-white rounded-[16px] border border-black/10 p-[7px] flex flex-col items-center justify-center aspect-[1.7/1] active:scale-95 active:bg-gray-50 transition-all duration-200 shadow-sm">
+                    <div class="text-[23px] mb-1.5">📅</div>
+                    <div class="text-[12px] font-semibold text-center leading-[1.2]">ホルター測定機器<br>予約システム</div>
+                </a>
+
+                <!-- 5. e-Labo -->
+                <a href="https://www.e-labo.ne.jp/logon" target="_blank" rel="noopener noreferrer" class="bg-white rounded-[16px] border border-black/10 p-[7px] flex flex-col items-center justify-center aspect-[1.7/1] active:scale-95 active:bg-gray-50 transition-all duration-200 shadow-sm">
+                    <div class="text-[23px] mb-1.5">🔏</div>
+                    <div class="text-[12px] font-semibold text-center">e-Labo<br>ログイン</div>
+                </a>
+
+                <!-- 6. ff-labo -->
+                <a href="https://www.ff-labo.net/login" target="_blank" rel="noopener noreferrer" class="bg-white rounded-[16px] border border-black/10 p-[7px] flex flex-col items-center justify-center aspect-[1.7/1] active:scale-95 active:bg-gray-50 transition-all duration-200 shadow-sm">
+                    <div class="text-[23px] mb-1.5">🔏</div>
+                    <div class="text-[12px] font-semibold text-center">ff-labo<br>ログイン</div>
+                </a>
+
+                <!-- 7. ホームページ -->
+                <a href="https://www.crc-group.co.jp/crc/index.html" target="_blank" rel="noopener noreferrer" class="bg-white rounded-[16px] border border-black/10 p-[7px] flex flex-col items-center justify-center aspect-[1.7/1] active:scale-95 active:bg-gray-50 transition-all duration-200 shadow-sm">
+                    <div class="text-[23px] mb-1.5">🏠</div>
+                    <div class="text-[12px] font-semibold text-center">ホームページ</div>
+                </a>
+
+                <!-- 8. 総合検査案内 PDF -->
+                <a href="https://www.crc-group.co.jp/crc/rinsyou/2025crc.pdf" target="_blank" rel="noopener noreferrer" class="bg-white rounded-[16px] border border-black/10 p-[7px] flex flex-col items-center justify-center aspect-[1.7/1] active:scale-95 active:bg-gray-50 transition-all duration-200 shadow-sm">
+                    <div class="text-[23px] mb-1.5">📄</div>
+                    <div class="text-[12px] font-semibold text-center">総合検査案内</div>
+                </a>
+
+                <!-- 9. 支所・研究所 -->
+                <a href="https://www.crc-group.co.jp/crcg_c_s.html" target="_blank" rel="noopener noreferrer" class="bg-white rounded-[16px] border border-black/10 p-[7px] flex flex-col items-center justify-center aspect-[1.7/1] active:scale-95 active:bg-gray-50 transition-all duration-200 shadow-sm">
+                    <div class="text-[23px] mb-1.5">🏢</div>
+                    <div class="text-[12px] font-semibold text-center leading-[1.2]">支所・研究所<br>一覧</div>
+                </a>
+
+                <!-- 10. お知らせ -->
+                <a href="https://www.crc-group.co.jp/crc/index.html#sisin" target="_blank" rel="noopener noreferrer" class="bg-white rounded-[16px] border border-black/10 p-[7px] flex flex-col items-center justify-center aspect-[1.7/1] active:scale-95 active:bg-gray-50 transition-all duration-200 shadow-sm">
+                    <div class="text-[23px] mb-1.5">📰</div>
+                    <div class="text-[12px] font-semibold text-center leading-[1.2]">最新のお知らせ<br>一覧</div>
+                </a>
+
+            </div>
+        </main>
+    </div>
+
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./sw.js').catch(err => console.log(err));
+            });
+        }
+    </script>
+</body>
+</html>
