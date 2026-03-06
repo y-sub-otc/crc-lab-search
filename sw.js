@@ -1,4 +1,4 @@
-const CACHE_NAME = 'crc-lab-v1'; // © XV‚Í‚±‚±‚ğ v2 ‚É‘‚«Š·‚¦‚é
+const CACHE_NAME = 'crc-lab-v1'; // â† æ›´æ–°æ™‚ã¯ã“ã“ã‚’ v2 ã«æ›¸ãæ›ãˆã‚‹
 const PRE_CACHE = [
   './',
   './index.html',
@@ -7,7 +7,7 @@ const PRE_CACHE = [
   'https://cdn.tailwindcss.com'
 ];
 
-// ƒCƒ“ƒXƒg[ƒ‹‚ÉŠî–{ƒtƒ@ƒCƒ‹‚ğƒLƒƒƒbƒVƒ…
+// ã‚¤ãƒ³ã‚¹ãƒˆãƒ¼ãƒ«æ™‚ã«åŸºæœ¬ãƒ•ã‚¡ã‚¤ãƒ«ã‚’ã‚­ãƒ£ãƒƒã‚·ãƒ¥
 self.addEventListener('install', (e) => {
   e.waitUntil(
     caches.open(CACHE_NAME).then((cache) => cache.addAll(PRE_CACHE))
@@ -15,7 +15,7 @@ self.addEventListener('install', (e) => {
   self.skipWaiting();
 });
 
-// ŒÃ‚¢ƒLƒƒƒbƒVƒ…‚Ìíœ
+// å¤ã„ã‚­ãƒ£ãƒƒã‚·ãƒ¥ã®å‰Šé™¤
 self.addEventListener('activate', (e) => {
   e.waitUntil(
     caches.keys().then((keys) => Promise.all(
@@ -26,14 +26,14 @@ self.addEventListener('activate', (e) => {
   );
 });
 
-// “Ç‚İ‚İˆ—ipdfjs‚Ì×‚©‚¢ƒtƒ@ƒCƒ‹‚àˆê“x“Ç‚İ‚ñ‚¾‚çƒLƒƒƒbƒVƒ…‚·‚éj
+// èª­ã¿è¾¼ã¿å‡¦ç†ï¼ˆpdfjsã®ç´°ã‹ã„ãƒ•ã‚¡ã‚¤ãƒ«ã‚‚ä¸€åº¦èª­ã¿è¾¼ã‚“ã ã‚‰ã‚­ãƒ£ãƒƒã‚·ãƒ¥ã™ã‚‹ï¼‰
 self.addEventListener('fetch', (event) => {
   event.respondWith(
     caches.match(event.request).then((cachedResponse) => {
       if (cachedResponse) return cachedResponse;
       return fetch(event.request).then((response) => {
         return caches.open(CACHE_NAME).then((cache) => {
-          // “®“I‚ÉƒLƒƒƒbƒVƒ…‚Ö’Ç‰Á
+          // å‹•çš„ã«ã‚­ãƒ£ãƒƒã‚·ãƒ¥ã¸è¿½åŠ 
           cache.put(event.request, response.clone());
           return response;
         });
