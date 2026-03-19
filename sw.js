@@ -1,5 +1,5 @@
-// キャッシュの世代番号です。更新時は v3 のように上げます。
-const CACHE_VERSION = "v2";
+// キャッシュの世代番号です。更新時は v4 のように上げます。
+const CACHE_VERSION = "v3";
 const CACHE_NAME = `crc-lab-${CACHE_VERSION}`;
 
 // install 時に先に保存しておくファイル一覧です。
